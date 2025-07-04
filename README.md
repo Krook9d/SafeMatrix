@@ -103,6 +103,6 @@ pip install -r requirements.txt
 **d. Lancer le serveur de développement**
 Cette commande démarre le serveur, qui se rechargera automatiquement à chaque modification de code.
 ```bash
-uvicorn main:app --reload
+uvicorn backend.main:app --reload
 ```
 L'API sera alors accessible à l'adresse `http://127.0.0.1:8000`. 
