@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from opensearchpy import OpenSearch
 
-from core.opensearch_client import get_opensearch_client
+from ...core.opensearch_client import get_opensearch_client
 
 router = APIRouter()
 

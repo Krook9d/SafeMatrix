@@ -2,10 +2,10 @@ import logging
 from opensearchpy import OpenSearch
 from opensearchpy.exceptions import RequestError
 
-from core.config import settings
+from .config import settings
 
 client = OpenSearch(
-    hosts=[settings.OPENSEARCH_URL],
+    hosts=[{"host": settings.OPENSEARCH_HOST, "port": settings.OPENSEARCH_PORT}],
     # For local development, we disable SSL verification.
     # In production, you'd configure this with your certificates.
     use_ssl=False,

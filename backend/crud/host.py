@@ -1,8 +1,8 @@
 import datetime
 from opensearchpy import OpenSearch, NotFoundError
 
-from schemas.host import HostCreate
-from core.opensearch_client import INDEX_HOSTS
+from ..schemas.host import HostCreate
+from ..core.opensearch_client import INDEX_HOSTS
 
 
 def get_hosts(client: OpenSearch, *, skip: int = 0, limit: int = 100) -> list[dict]:

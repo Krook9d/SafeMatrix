@@ -4,11 +4,11 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from core.config import settings
-from core.database import get_db
-from core.opensearch_client import get_opensearch_client as os_client_dep
-import crud.user as crud
-import schemas.user as schemas
+from .config import settings
+from .database import get_db
+from .opensearch_client import get_opensearch_client as os_client_dep
+from ..crud import user as crud_user
+from ..schemas import user as schemas_user
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login/access-token")
 
@@ -21,7 +21,7 @@ class TokenData(BaseModel):
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-) -> schemas.User:
+) -> schemas_user.User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -39,7 +39,7 @@ async def get_current_user(
     if token_data.username is None:
         raise credentials_exception
 
-    user = crud.get_user_by_username(db, username=token_data.username)
+    user = crud_user.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user 

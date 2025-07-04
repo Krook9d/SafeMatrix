@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 
-from core.database import engine
-from core.opensearch_client import create_indexes
-import models.user
-from api.v1 import users as users_router
-from api.v1 import login as login_router
-from api.v1 import health as health_router
-from api.v1 import hosts as hosts_router
-from api.v1 import inventories as inventories_router
+from .core.database import engine
+from .core.opensearch_client import create_indexes
+from .models import user
+from .api.v1 import users as users_router
+from .api.v1 import login as login_router
+from .api.v1 import health as health_router
+from .api.v1 import hosts as hosts_router
+from .api.v1 import inventories as inventories_router
 
-models.user.Base.metadata.create_all(bind=engine)
+user.Base.metadata.create_all(bind=engine)
 create_indexes()
 
 app = FastAPI(

@@ -1,9 +1,9 @@
 import datetime
-from opensearchpy import OpenSearch
+from opensearchpy import OpenSearch, NotFoundError
 from typing import Optional
 
-from schemas.inventory import InventoryCreate
-from core.opensearch_client import INDEX_INVENTORIES
+from ..schemas.inventory import InventoryCreate
+from ..core.opensearch_client import INDEX_INVENTORIES
 from . import host as crud_host
 
 
@@ -78,7 +78,7 @@ def update_inventory(client: OpenSearch, *, inventory_id: str, inventory_in: Inv
         updated_doc = response.get("get", {}).get("_source", {})
         updated_doc["_id"] = response["_id"]
         return updated_doc
-    except client.exceptions.NotFoundError:
+    except NotFoundError:
         return None
 
 
@@ -96,7 +96,7 @@ def delete_inventory(client: OpenSearch, *, inventory_id: str) -> bool:
     try:
         client.delete(index=INDEX_INVENTORIES, id=inventory_id, refresh=True)
         return True
-    except client.exceptions.NotFoundError:
+    except NotFoundError:
         return False
 
 
