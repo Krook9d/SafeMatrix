@@ -81,7 +81,7 @@ Une fois les services Docker démarrés, suivez ces étapes depuis la racine du 
 
 **a. Créer un environnement virtuel**
 ```bash
-python -m venv venv
+python3 -m venv venv
 ```
 
 **b. Activer l'environnement virtuel**
