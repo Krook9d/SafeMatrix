@@ -128,39 +128,53 @@ SafeMatrix est une Plateforme centralisée pour la collecte, l’analyse et la v
 ## Vulnerabilité Database 
 
 ### NVD API 2.0 - Source Principale
+
 ✅ Avantages
+
 100% gratuit - Aucun coût
 Base de données officielle US Government
 Couverture exhaustive - Plus de 300,000 CVE
 Données enrichies - CVSS, CWE, CPE, etc.
+
 ⚠️ Limitations critiques
 
 Avec clé API : 50 req/30s (~1,67 req/sec)
 Problèmes actuels : Ralentissements et backlog depuis 2024
+
 🔗 Liens essentiels
+
 API : https://services.nvd.nist.gov/rest/json/cves/2.0
 Clé API : https://nvd.nist.gov/developers/request-an-api-key
 Documentation : https://nvd.nist.gov/developers/vulnerabilities
 
 ### CISA KEV - Complément Critique
+
 ✅ Avantages
 Vulnérabilités exploitées activement
 Feed JSON simple
 Données prioritaires pour la sécurité
+
 ⚠️ Limitations
+
 Rate limits non spécifiés mais appliqués
 Couverture limitée aux vulnérabilités exploitées
+
 🔗 Liens
+
 Feed officiel : https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
 Mirror GitHub : https://raw.githubusercontent.com/BenjiTrapp/cisa-known-vuln-scraper/main/cisa-kev.json
 Catalogue : https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 
 ### FediSec CVE Feed - Enrichissement
+
 ✅ Avantages
+
 Scores EPSS inclus
 Contexte supplémentaire
 Limites GitHub permissives
+
 🔗 Lien
+
 Feed : https://raw.githubusercontent.com/fedisecfeeds/fedisecfeeds.github.io/main/fedi_cve_feed.json
 
 ---
