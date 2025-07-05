@@ -16,6 +16,7 @@ client = OpenSearch(
 
 INDEX_HOSTS = "hosts"
 INDEX_INVENTORIES = "inventories"
+INDEX_VULNERABILITIES = "vulnerabilities"
 
 
 def create_indexes():
@@ -58,9 +59,31 @@ def create_indexes():
         }
     }
     
+    vulnerabilities_mapping = {
+        "properties": {
+            "id": {"type": "keyword"}, # CVE-2021-12345
+            "sourceIdentifier": {"type": "keyword"},
+            "published": {"type": "date"},
+            "lastModified": {"type": "date"},
+            "vulnStatus": {"type": "keyword"},
+            "descriptions": {
+                "type": "nested",
+                "properties": {
+                    "lang": {"type": "keyword"},
+                    "value": {"type": "text"}
+                }
+            },
+            "metrics": {"type": "object"}, # Can be complex, storing as generic object
+            "weaknesses": {"type": "object"},
+            "configurations": {"type": "object"},
+            "references": {"type": "object"}
+        }
+    }
+
     indices_to_create = {
         INDEX_HOSTS: hosts_mapping,
         INDEX_INVENTORIES: inventories_mapping,
+        INDEX_VULNERABILITIES: vulnerabilities_mapping,
     }
 
     for index_name, mapping in indices_to_create.items():
