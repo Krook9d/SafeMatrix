@@ -37,6 +37,24 @@ class NVDService:
             logger.error(f"An error occurred while fetching NVD data: {e}")
             return None
 
+    def fetch_cve_by_id(self, cve_id: str) -> dict | None:
+        """
+        Fetches a single CVE by its ID from the NVD API.
+        """
+        params = {'cveId': cve_id}
+        try:
+            logger.info(f"Fetching NVD data for CVE {cve_id}...")
+            response = requests.get(NVD_API_BASE_URL, headers=self.headers, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            if data.get('vulnerabilities'):
+                # Return the 'cve' object which contains all details
+                return data['vulnerabilities'][0]['cve']
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"An error occurred while fetching CVE {cve_id}: {e}")
+            return None
+
     def sync_all_vulnerabilities(self):
         """
         Iterates through all pages of the NVD CVE data and yields vulnerabilities.
