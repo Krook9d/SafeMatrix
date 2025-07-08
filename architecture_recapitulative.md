@@ -60,11 +60,11 @@ SafeMatrix est une Plateforme centralisée pour la collecte, l’analyse et la v
 
 - Authentification via API (login/password → token JWT)
 - Dashboard ergonomique, moderne, quelques pages seulement :
+  - Home page avec KPI (Graphiques synthétiques (répartition vulnéras, hot hosts, etc.), dernieres vulnerabilités en date etc..)
   - Liste des hosts + détails inventaire/logiciels par host
   - Visualisation des vulnérabilités associées à chaque logiciel/host
-  - Graphiques synthétiques (répartition vulnéras, hot hosts, etc.)
   - Filtres/recherche (full-text via API/backend)
-- UI Kit recommandé : **Ant Design** ou **Material-UI**
+- UI Kit recommandé : **Material-UI**
 
 ---
 
