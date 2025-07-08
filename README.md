@@ -1,108 +1,144 @@
 # SafeMatrix
 
-# Architecture du Backend FastAPI (SafeMatrix)
+# FastAPI Backend Architecture (SafeMatrix)
 
-Ce document explique la structure des dossiers et des fichiers de ce projet backend. L'objectif est de séparer clairement les responsabilités (`separation of concerns`) pour rendre le code plus facile à maintenir et à faire évoluer.
+This document explains the folder and file structure of this backend project. The goal is to clearly separate responsibilities (separation of concerns) to make the code easier to maintain and evolve.
 
 ---
 
 ### `main.py`
 
-C'est le **point d'entrée** principal de l'application.
-- Il initialise l'application FastAPI.
-- Il lance la création des tables de la base de données au démarrage.
-- Il inclut les routeurs de l'API définis dans le dossier `/api`.
+This is the main **entry point** of the application.
+- It initializes the FastAPI application.
+- It launches database table creation on startup.
+- It includes API routers defined in the `/api` folder.
 
 ---
 
-### Dossier `/core`
+### `/core` Folder
 
-Contient la logique et la configuration "centrales" de l'application.
-- **`config.py`**: Gère les variables d'environnement et les paramètres de configuration (ex: URL de la base de données, clés secrètes) en utilisant Pydantic.
-- **`database.py`**: Établit la connexion à la base de données PostgreSQL (le "moteur" SQLAlchemy) et fournit les sessions de base de données à l'application.
-- **`opensearch_client.py`**: Gère la connexion au cluster OpenSearch et contient la logique pour créer les index (`hosts`, `inventories`) au démarrage de l'application.
-- **`security.py`**: Contient les fonctions liées à la sécurité, comme le hachage des mots de passe et la création/vérification des tokens JWT.
-- **`dependencies.py`**: Définit les dépendances réutilisables à travers l'application, comme `get_db` pour obtenir une session de base de données, `get_current_user` pour la protection des routes, et `get_opensearch_client` pour l'accès à OpenSearch.
-
----
-
-### Dossier `/models`
-
-Définit la structure des **tables de la base de données**.
-- **`user.py`**: Contient la classe `User`, qui est le modèle SQLAlchemy correspondant à la table `users` dans PostgreSQL. Il définit les colonnes (`id`, `username`, `hashed_password`, etc.).
+Contains the "central" logic and configuration of the application.
+- **`config.py`**: Manages environment variables and configuration parameters (e.g., database URL, secret keys) using Pydantic.
+- **`database.py`**: Establishes connection to the PostgreSQL database (the SQLAlchemy "engine") and provides database sessions to the application.
+- **`opensearch_client.py`**: Manages connection to the OpenSearch cluster and contains logic to create indexes (`hosts`, `inventories`) on application startup.
+- **`security.py`**: Contains security-related functions, such as password hashing and JWT token creation/verification.
+- **`dependencies.py`**: Defines reusable dependencies across the application, such as `get_db` to get a database session, `get_current_user` for route protection, and `get_opensearch_client` for OpenSearch access.
 
 ---
 
-### Dossier `/schemas`
+### `/models` Folder
 
-Définit la **forme des données** que l'API reçoit et envoie, en utilisant des modèles Pydantic pour la validation.
-- **`user.py`**: Contient les schémas pour l'utilisateur (`UserCreate`, `User`).
-- **`host.py`**: Contient les schémas pour les machines (`HostCreate`, `Host`, etc.), définissant la structure attendue pour créer ou retourner une machine.
-
----
-
-### Dossier `/crud`
-
-Signifie **C**reate, **R**ead, **U**pdate, **D**elete. Contient la logique qui interagit directement avec les bases de données (PostgreSQL ou OpenSearch).
-- **`user.py`**: Contient les fonctions pour manipuler les utilisateurs dans PostgreSQL (`get_user_by_username`, `create_user`).
-- **`host.py`**: Contient les fonctions pour manipuler les machines dans OpenSearch (`create_host`, `get_host`).
+Defines the structure of **database tables**.
+- **`user.py`**: Contains the `User` class, which is the SQLAlchemy model corresponding to the `users` table in PostgreSQL. It defines the columns (`id`, `username`, `hashed_password`, etc.).
 
 ---
 
-### Dossier `/api`
+### `/schemas` Folder
 
-Définit les **routes (endpoints)** de l'API.
-- **`/v1`**: Un sous-dossier pour la version 1 de notre API.
-  - **`users.py`**: Définit les routes pour les utilisateurs (`POST /users/`, `GET /users/me`).
-  - **`login.py`**: Définit la route d'authentification (`POST /login/access-token`).
-  - **`health.py`**: Contient les routes pour vérifier l'état des services, comme OpenSearch.
-  - **`hosts.py`**: Définit les routes pour les machines (`POST /hosts/`, `GET /hosts/{host_id}`).
+Defines the **shape of data** that the API receives and sends, using Pydantic models for validation.
+- **`user.py`**: Contains schemas for the user (`UserCreate`, `User`).
+- **`host.py`**: Contains schemas for machines (`HostCreate`, `Host`, etc.), defining the expected structure for creating or returning a machine.
 
 ---
 
-### Setup & Lancement
+### `/crud` Folder
 
-Pour faire fonctionner l'application, les services de base de données (PostgreSQL, OpenSearch) doivent d'abord être lancés via Docker. Ensuite, le backend Python peut être démarré.
+Stands for **C**reate, **R**ead, **U**pdate, **D**elete. Contains logic that directly interacts with databases (PostgreSQL or OpenSearch).
+- **`user.py`**: Contains functions to manipulate users in PostgreSQL (`get_user_by_username`, `create_user`).
+- **`host.py`**: Contains functions to manipulate machines in OpenSearch (`create_host`, `get_host`).
 
-#### 1. Lancer les services (Docker)
-Depuis la **racine du projet** (le dossier contenant `docker-compose.yml`), lancez :
+---
+
+### `/api` Folder
+
+Defines the **routes (endpoints)** of the API.
+- **`/v1`**: A sub-folder for version 1 of our API.
+  - **`users.py`**: Defines routes for users (`POST /users/`, `GET /users/me`).
+  - **`login.py`**: Defines authentication route (`POST /login/access-token`).
+  - **`health.py`**: Contains routes to check service status, such as OpenSearch.
+  - **`hosts.py`**: Defines routes for machines (`POST /hosts/`, `GET /hosts/{host_id}`).
+
+---
+
+### Setup & Launch
+
+To run the application, database services (PostgreSQL, OpenSearch) must first be launched via Docker. Then, the Python backend can be started.
+
+#### 1. Launch Services (Docker)
+From the **project root** (the folder containing `docker-compose.yml`), run:
 ```bash
 docker-compose up -d
 ```
-Cela va démarrer PostgreSQL et OpenSearch en arrière-plan.
+This will start PostgreSQL and OpenSearch in the background.
 
-Pour les arrêter proprement, utilisez :
+To stop them properly, use:
 ```bash
 docker-compose down
 ```
 
-#### 2. Lancer le Backend (Python)
-Une fois les services Docker démarrés, suivez ces étapes depuis la racine du dossier `backend/`.
+#### 2. Launch Backend (Python)
+Once Docker services are started, follow these steps from the `backend/` folder root.
 
-**a. Créer un environnement virtuel**
+**a. Create a virtual environment**
 ```bash
 python3 -m venv venv
 ```
 
-**b. Activer l'environnement virtuel**
-- Sur Windows (PowerShell):
+**b. Activate the virtual environment**
+- On Windows (PowerShell):
   ```powershell
   .\venv\Scripts\Activate.ps1
   ```
-- Sur macOS/Linux:
+- On macOS/Linux:
   ```bash
   source venv/bin/activate
   ```
 
-**c. Installer les dépendances**
-Assurez-vous que l'environnement virtuel est activé, puis lancez :
+**c. Install dependencies**
+Make sure the virtual environment is activated, then run:
 ```bash
 pip install -r requirements.txt
 ```
 
-**d. Lancer le serveur de développement**
-Cette commande démarre le serveur, qui se rechargera automatiquement à chaque modification de code.
+**d. Launch the development server**
+This command starts the server, which will automatically reload on every code change.
 ```bash
 uvicorn backend.main:app --reload
 ```
-L'API sera alors accessible à l'adresse `http://127.0.0.1:8000`. 
+The API will then be accessible at `http://127.0.0.1:8000`.
+
+#### 3. Launch Frontend (React)
+Navigate to the `frontend/` folder and follow these steps:
+
+**a. Install dependencies**
+```bash
+npm install
+```
+
+**b. Launch the development server**
+```bash
+npm run dev
+```
+The frontend will be accessible at `http://localhost:5173`.
+
+**c. Build for production**
+```bash
+npm run build
+```
+
+---
+
+### Frontend Development
+
+The frontend is built with:
+- **React 18** with TypeScript
+- **Vite** for fast development and building
+- **Material-UI (MUI)** for modern UI components
+- **React Router** for navigation
+- **Axios** for API communication
+
+#### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint

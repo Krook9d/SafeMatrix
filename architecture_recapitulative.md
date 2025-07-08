@@ -1,118 +1,116 @@
-# 🛠️ Architecture Récapitulative
+# 🛠️ Architecture Overview
 
-## Résumé du projet
+## Project Summary
 
-SafeMatrix est une Plateforme centralisée pour la collecte, l’analyse et la visualisation de l’inventaire logiciel et des vulnérabilités des postes Windows, Linux et macOS via des agents Go. Les vulnérabilités sont automatiquement enrichies à partir de sources publiques externes (AlienVault, etc.). Backend FastAPI (Python), stockage sécurisé (OpenSearch, PostgreSQL), dashboard React, authentification forte.
+SafeMatrix is a centralized platform for collecting, analyzing, and visualizing software inventory and vulnerabilities on Windows, Linux, and macOS endpoints via Go agents. Vulnerabilities are automatically enriched from external public sources (AlienVault, etc.). FastAPI backend (Python), secure storage (OpenSearch, PostgreSQL), React dashboard, strong authentication.
 
-
-
-## 1. Vue d'ensemble
+## 1. Overview
 
 ```
-[Agent Go]
+[Go Agent]
    |  (Push JSON via HTTPS)
    v
-[API Python FastAPI]  <---  [Dashboard React]
+[Python FastAPI API]  <---  [React Dashboard]
    |                       (fetch via JWT token)
    +--> [PostgreSQL] (users/auth)
    |
-   +--> [OpenSearch] (hosts, inventaire, logs)
+   +--> [OpenSearch] (hosts, inventory, logs)
 ```
 
 ---
 
-## 2. Agents endpoint
+## 2. Agent Endpoints
 
-- Codés en **Go**, packagés pour Windows/Linux/macOS
-- Fonctionnent comme service/daemon en tâche de fond (invisible)
-- Collectent la liste des logiciels installés + versions toutes les 5 min
-- Poussent les données en **HTTPS/JSON** sur l’API backend
-
----
-
-## 3. Backend principal (FastAPI)
-
-- Reçoit les inventaires des agents
-- Interroge des API publiques (AlienVault, etc.) pour enrichir les logiciels/versions avec les vulnérabilités connues
-- Stocke les données enrichies dans OpenSearch
-- Authentifie les utilisateurs via **PostgreSQL** (username, password hash)
-- Gère les sessions avec **JWT**
-- Expose une API REST pour :
-  - Recevoir les inventaires des agents
-  - Permettre au frontend (dashboard) d’afficher hosts, inventaires, vulnérabilités, etc.
-  - Authentifier les users
+- Coded in **Go**, packaged for Windows/Linux/macOS
+- Function as background service/daemon (invisible)
+- Collect list of installed software + versions every 5 minutes
+- Push data via **HTTPS/JSON** to the backend API
 
 ---
 
-## 4. Stockage
+## 3. Main Backend (FastAPI)
 
-- **PostgreSQL** :
-  - Table `users` (username, hash, role, created\_at…)
-- **OpenSearch** :
-  - Index `hosts` : 1 doc/host (id, nom, ip, os…)
-  - Index `inventories` : inventaire logiciels, version, date, **vulns**
-    - ex : `vulns` : [ {cve\_id, description, score, url…}, … ]
-  - Index logs/alertes si besoin
+- Receives inventories from agents
+- Queries public APIs (AlienVault, etc.) to enrich software/versions with known vulnerabilities
+- Stores enriched data in OpenSearch
+- Authenticates users via **PostgreSQL** (username, password hash)
+- Manages sessions with **JWT**
+- Exposes REST API for:
+  - Receiving inventories from agents
+  - Allowing frontend (dashboard) to display hosts, inventories, vulnerabilities, etc.
+  - Authenticating users
+
+---
+
+## 4. Storage
+
+- **PostgreSQL**:
+  - `users` table (username, hash, role, created_at…)
+- **OpenSearch**:
+  - `hosts` index: 1 doc/host (id, name, ip, os…)
+  - `inventories` index: software inventory, version, date, **vulns**
+    - e.g., `vulns`: [ {cve_id, description, score, url…}, … ]
+  - Logs/alerts index if needed
 
 ---
 
 ## 5. Frontend (React)
 
-- Authentification via API (login/password → token JWT)
-- Dashboard ergonomique, moderne, quelques pages seulement :
-  - Home page avec KPI (Graphiques synthétiques (répartition vulnéras, hot hosts, etc.), dernieres vulnerabilités en date etc..)
-  - Liste des hosts + détails inventaire/logiciels par host
-  - Visualisation des vulnérabilités associées à chaque logiciel/host
-  - Filtres/recherche (full-text via API/backend)
-- UI Kit recommandé : **Material-UI**
+- Authentication via API (login/password → JWT token)
+- Ergonomic, modern dashboard, just a few pages:
+  - Home page with KPIs (Summary charts (vulnerability distribution, hot hosts, etc.), latest vulnerabilities by date, etc.)
+  - List of hosts + inventory/software details per host
+  - Visualization of vulnerabilities associated with each software/host
+  - Filters/search (full-text via API/backend)
+- Recommended UI Kit: **Material-UI**
 
 ---
 
-## 6. Déploiement
+## 6. Deployment
 
-- **Docker Compose** pour tout orchestrer :
-  - Container FastAPI backend
-  - Container PostgreSQL
-  - Container OpenSearch
-  - (Optionnel) Container OpenSearch Dashboard
-  - Container frontend React (servi via nginx ou Vite)
-- Agents Go : installés directement sur les endpoints à monitorer (hors Compose)
-
----
-
-## 7. Sécurité
-
-- MDP hashés en **bcrypt** dans PostgreSQL
-- Accès à OpenSearch restreint au backend uniquement
-- Tout le trafic en **HTTPS**
-- Aucun mot de passe ou info sensible dans OpenSearch
+- **Docker Compose** to orchestrate everything:
+  - FastAPI backend container
+  - PostgreSQL container
+  - OpenSearch container
+  - (Optional) OpenSearch Dashboard container
+  - React frontend container (served via nginx or Vite)
+- Go agents: installed directly on endpoints to monitor (outside Compose)
 
 ---
 
-## 8. Scalabilité / Roadmap
+## 7. Security
 
-- MVP simple-tenant, évolutif multi-tenant en ajoutant une colonne/clé sur les tables indexées
-- Possibilité d’ajouter un worker asynchrone/celery pour du traitement batch si besoin plus tard
-- Ajout de l’IA/LLM possible dans un second temps (module à part)
-
----
-
-## 9. Flux utilisateur
-
-1. **Admin/analyste** se connecte sur le dashboard (React)
-2. Le frontend interroge l’API backend (FastAPI), avec le JWT
-3. L’API lit les users/auth dans PostgreSQL, les inventaires/hosts dans OpenSearch
-4. Les **agents Go** pushent les inventaires régulièrement
-5. Les nouveaux softs/vulnéras apparaissent en quasi temps réel dans le dashboard
+- Passwords hashed with **bcrypt** in PostgreSQL
+- OpenSearch access restricted to backend only
+- All traffic over **HTTPS**
+- No passwords or sensitive info in OpenSearch
 
 ---
 
-## 10. Diagramme ASCII
+## 8. Scalability / Roadmap
+
+- Simple single-tenant MVP, scalable to multi-tenant by adding a column/key on indexed tables
+- Possibility to add asynchronous worker/celery for batch processing if needed later
+- AI/LLM addition possible later (separate module)
+
+---
+
+## 9. User Flow
+
+1. **Admin/analyst** logs into the dashboard (React)
+2. Frontend queries the backend API (FastAPI), with JWT
+3. API reads users/auth from PostgreSQL, inventories/hosts from OpenSearch
+4. **Go agents** push inventories regularly
+5. New software/vulnerabilities appear in near real-time in the dashboard
+
+---
+
+## 10. ASCII Diagram
 
 ```
       [Endpoints/Users]
             |
-        [Agent Go]
+        [Go Agent]
             |
          (Push HTTPS/JSON)
             |
@@ -125,57 +123,57 @@ SafeMatrix est une Plateforme centralisée pour la collecte, l’analyse et la v
 
 ---
 
-## Vulnerabilité Database 
+## Vulnerability Database 
 
-### NVD API 2.0 - Source Principale
+### NVD API 2.0 - Main Source
 
-✅ Avantages
+✅ Advantages
 
-100% gratuit - Aucun coût
-Base de données officielle US Government
-Couverture exhaustive - Plus de 300,000 CVE
-Données enrichies - CVSS, CWE, CPE, etc.
+100% free - No cost
+Official US Government database
+Comprehensive coverage - Over 300,000 CVEs
+Enriched data - CVSS, CWE, CPE, etc.
 
-⚠️ Limitations critiques
+⚠️ Critical limitations
 
-Avec clé API : 50 req/30s (~1,67 req/sec)
-Problèmes actuels : Ralentissements et backlog depuis 2024
+With API key: 50 req/30s (~1.67 req/sec)
+Current issues: Slowdowns and backlog since 2024
 
-🔗 Liens essentiels
+🔗 Essential links
 
-API : https://services.nvd.nist.gov/rest/json/cves/2.0
-Clé API : https://nvd.nist.gov/developers/request-an-api-key
-Documentation : https://nvd.nist.gov/developers/vulnerabilities
+API: https://services.nvd.nist.gov/rest/json/cves/2.0
+API Key: https://nvd.nist.gov/developers/request-an-api-key
+Documentation: https://nvd.nist.gov/developers/vulnerabilities
 
-### CISA KEV - Complément Critique
+### CISA KEV - Critical Complement
 
-✅ Avantages
-Vulnérabilités exploitées activement
-Feed JSON simple
-Données prioritaires pour la sécurité
+✅ Advantages
+Actively exploited vulnerabilities
+Simple JSON feed
+Priority data for security
 
 ⚠️ Limitations
 
-Rate limits non spécifiés mais appliqués
-Couverture limitée aux vulnérabilités exploitées
+Rate limits not specified but applied
+Limited coverage to exploited vulnerabilities
 
-🔗 Liens
+🔗 Links
 
-Feed officiel : https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
-Mirror GitHub : https://raw.githubusercontent.com/BenjiTrapp/cisa-known-vuln-scraper/main/cisa-kev.json
-Catalogue : https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+Official feed: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+GitHub mirror: https://raw.githubusercontent.com/BenjiTrapp/cisa-known-vuln-scraper/main/cisa-kev.json
+Catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 
-### FediSec CVE Feed - Enrichissement
+### FediSec CVE Feed - Enrichment
 
-✅ Avantages
+✅ Advantages
 
-Scores EPSS inclus
-Contexte supplémentaire
-Limites GitHub permissives
+EPSS scores included
+Additional context
+Permissive GitHub limits
 
-🔗 Lien
+🔗 Link
 
-Feed : https://raw.githubusercontent.com/fedisecfeeds/fedisecfeeds.github.io/main/fedi_cve_feed.json
+Feed: https://raw.githubusercontent.com/fedisecfeeds/fedisecfeeds.github.io/main/fedi_cve_feed.json
 
 ---
 
