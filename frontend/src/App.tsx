@@ -8,7 +8,9 @@ import Layout from './components/Layout';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
 import Hosts from './pages/Hosts';
+import HostDetail from './pages/HostDetail';
 import Vulnerabilities from './pages/Vulnerabilities';
+import VulnerabilityDetail from './pages/VulnerabilityDetail';
 import Inventory from './pages/Inventory';
 
 // Professional Material-UI theme
@@ -224,39 +226,16 @@ const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={
               <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <Layout />
               </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/hosts" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Hosts />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/vulnerabilities" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Vulnerabilities />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/inventory" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Inventory />
-                </Layout>
-              </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="hosts" element={<Hosts />} />
+              <Route path="hosts/:hostId" element={<HostDetail />} />
+              <Route path="vulnerabilities" element={<Vulnerabilities />} />
+              <Route path="vulnerabilities/:cveId" element={<VulnerabilityDetail />} />
+              <Route path="inventory" element={<Inventory />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>

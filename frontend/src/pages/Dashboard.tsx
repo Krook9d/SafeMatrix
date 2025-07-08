@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Dashboard
         </Typography>
@@ -87,7 +87,7 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Dashboard
         </Typography>
@@ -99,7 +99,7 @@ const Dashboard: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
         Dashboard
       </Typography>

@@ -109,9 +109,9 @@ const InventoryPage: React.FC = () => {
     return '📦';
   };
 
-  if (loading) {
+  if (loading && softwareSummary.length === 0) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Software Inventory
         </Typography>
@@ -126,7 +126,7 @@ const InventoryPage: React.FC = () => {
 
   if (error) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Software Inventory
         </Typography>
@@ -142,7 +142,7 @@ const InventoryPage: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">
           Software Inventory ({filteredSoftware.length})

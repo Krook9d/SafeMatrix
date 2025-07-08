@@ -80,12 +80,45 @@ export interface Software {
 
 export interface Vulnerability {
   id: string;
-  description: string;
+  sourceIdentifier?: string;
+  published?: string;
+  lastModified?: string;
+  vulnStatus?: string;
+  descriptions?: Array<{
+    lang: string;
+    value: string;
+  }>;
+  metrics?: {
+    cvssMetricV31?: Array<{
+      cvssData: {
+        baseScore: number;
+        baseSeverity: string;
+      };
+    }>;
+    cvssMetricV30?: Array<{
+      cvssData: {
+        baseScore: number;
+        baseSeverity: string;
+      };
+    }>;
+    cvssMetricV2?: Array<{
+      cvssData: {
+        baseScore: number;
+      };
+    }>;
+  };
+  weaknesses?: any[];
+  configurations?: any[];
+  references?: Array<{
+    url: string;
+    source?: string;
+  }>;
+  // Legacy fields for backward compatibility
+  description?: string;
   score?: number;
   severity?: string;
-  published_date: string;
-  last_modified_date: string;
-  configurations: CPE[];
+  published_date?: string;
+  last_modified_date?: string;
 }
 
 export interface CPE {
@@ -104,7 +137,7 @@ export interface CPE {
 
 export interface VulnerabilityCollection {
   total: number;
-  items: Vulnerability[];
+  vulnerabilities: Vulnerability[];
 }
 
 export interface InventoryVulnerability {
@@ -194,16 +227,25 @@ export const hostsAPI = {
 
 // Vulnerabilities
 export const vulnerabilitiesAPI = {
-  getAll: async (skip = 0, limit = 100, search?: string): Promise<VulnerabilityCollection> => {
-    const params = new URLSearchParams({
-      skip: skip.toString(),
-      limit: limit.toString(),
-    });
-    if (search) {
-      params.append('search', search);
+  getAll: async (params?: { search?: string; skip?: number; limit?: number }): Promise<VulnerabilityCollection> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.search) {
+      searchParams.append('search', params.search);
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
     }
     
-    const response = await apiClient.get(`/api/v1/vulnerabilities/?${params}`);
+    const response = await apiClient.get(`/api/v1/vulnerabilities/?${searchParams}`);
+    return response.data;
+  },
+
+  getById: async (cveId: string): Promise<Vulnerability> => {
+    const response = await apiClient.get(`/api/v1/vulnerabilities/${cveId}`);
     return response.data;
   },
 };

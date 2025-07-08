@@ -100,71 +100,76 @@ def get_software_summary(
     """
     from ...core.opensearch_client import INDEX_INVENTORIES
     
-    response = client.search(
-        index=INDEX_INVENTORIES,
-        body={
-            "size": 0,
-            "aggs": {
-                "software_aggregation": {
-                    "terms": {
-                        "field": "software_name.keyword",
-                        "size": 1000
-                    },
-                    "aggs": {
-                        "unique_versions": {
-                            "cardinality": {
-                                "field": "version.keyword"
-                            }
+    try:
+        response = client.search(
+            index=INDEX_INVENTORIES,
+            body={
+                "size": 0,
+                "aggs": {
+                    "software_aggregation": {
+                        "terms": {
+                            "field": "software_name.keyword",
+                            "size": 1000
                         },
-                        "latest_version": {
-                            "top_hits": {
-                                "sort": [{"created_at": {"order": "desc"}}],
-                                "size": 1,
-                                "_source": ["version"]
-                            }
-                        },
-                        "unique_hosts": {
-                            "cardinality": {
-                                "field": "host_id.keyword"
-                            }
-                        },
-                        "vulnerability_count": {
-                            "sum": {
-                                "script": {
-                                    "source": "if (params._source.vulnerabilities != null) { return params._source.vulnerabilities.size(); } else { return 0; }"
+                        "aggs": {
+                            "unique_versions": {
+                                "cardinality": {
+                                    "field": "version.keyword"
+                                }
+                            },
+                            "latest_version": {
+                                "top_hits": {
+                                    "sort": [{"created_at": {"order": "desc"}}],
+                                    "size": 1,
+                                    "_source": ["version"]
+                                }
+                            },
+                            "unique_hosts": {
+                                "cardinality": {
+                                    "field": "host_id.keyword"
+                                }
+                            },
+                            "vulnerability_count": {
+                                "sum": {
+                                    "script": {
+                                        "source": "if (params._source.vulnerabilities != null) { return params._source.vulnerabilities.size(); } else { return 0; }"
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-    )
-    
-    software_summary = []
-    buckets = response.get("aggregations", {}).get("software_aggregation", {}).get("buckets", [])
-    
-    for bucket in buckets:
-        software_name = bucket["key"]
-        total_installations = bucket["doc_count"]
-        unique_versions = bucket["unique_versions"]["value"]
-        unique_hosts = bucket["unique_hosts"]["value"]
-        vulnerability_count = int(bucket["vulnerability_count"]["value"])
+        )
         
-        # Get latest version
-        latest_hit = bucket["latest_version"]["hits"]["hits"]
-        latest_version = latest_hit[0]["_source"]["version"] if latest_hit else "Unknown"
+        software_summary = []
+        buckets = response.get("aggregations", {}).get("software_aggregation", {}).get("buckets", [])
         
-        software_summary.append({
-            "software_name": software_name,
-            "total_installations": total_installations,
-            "unique_versions": unique_versions,
-            "latest_version": latest_version,
-            "hosts_count": unique_hosts,
-            "vulnerability_count": vulnerability_count
-        })
-    
-    # Sort by total installations (most used software first)
-    software_summary.sort(key=lambda x: x["total_installations"], reverse=True)
-    
-    return software_summary 
+        for bucket in buckets:
+            software_name = bucket["key"]
+            total_installations = bucket["doc_count"]
+            unique_versions = bucket["unique_versions"]["value"]
+            unique_hosts = bucket["unique_hosts"]["value"]
+            vulnerability_count = int(bucket["vulnerability_count"]["value"])
+            
+            # Get latest version
+            latest_hit = bucket["latest_version"]["hits"]["hits"]
+            latest_version = latest_hit[0]["_source"]["version"] if latest_hit else "Unknown"
+            
+            software_summary.append({
+                "software_name": software_name,
+                "total_installations": total_installations,
+                "unique_versions": unique_versions,
+                "latest_version": latest_version,
+                "hosts_count": unique_hosts,
+                "vulnerability_count": vulnerability_count
+            })
+        
+        # Sort by total installations (most used software first)
+        software_summary.sort(key=lambda x: x["total_installations"], reverse=True)
+        
+        return software_summary
+        
+    except Exception as e:
+        # If the index does not exist or other error, return empty list
+        return [] 

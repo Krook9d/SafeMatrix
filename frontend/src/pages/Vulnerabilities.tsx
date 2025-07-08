@@ -17,15 +17,23 @@ import {
   Button,
   Pagination,
   Link,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  type SelectChangeEvent,
 } from '@mui/material';
 import {
   Search,
   Security,
   Refresh,
   OpenInNew,
+  FilterList,
 } from '@mui/icons-material';
 import type { VulnerabilityCollection, Vulnerability } from '../services/api';
 import { vulnerabilitiesAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const Vulnerabilities: React.FC = () => {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
@@ -34,22 +42,65 @@ const Vulnerabilities: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const itemsPerPage = 50;
+  const [severityFilter, setSeverityFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const itemsPerPage = 100;
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchVulnerabilities();
-  }, [page, searchTerm]);
+  }, [page, searchTerm, severityFilter, dateFilter]);
 
   const fetchVulnerabilities = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const skip = (page - 1) * itemsPerPage;
-      const data = await vulnerabilitiesAPI.getAll(skip, itemsPerPage, searchTerm || undefined);
-      setVulnerabilities(data.items);
-      setTotal(data.total);
+      const response = await vulnerabilitiesAPI.getAll({
+        search: searchTerm || undefined,
+        skip: skip,
+        limit: itemsPerPage
+      });
+      
+      // Apply client-side filtering for now (can be moved to backend later)
+      let filteredVulns = response.vulnerabilities;
+      
+      if (severityFilter) {
+        filteredVulns = filteredVulns.filter(vuln => {
+          const severity = getSeverityLabel(vuln.score);
+          return severity.toLowerCase() === severityFilter.toLowerCase();
+        });
+      }
+      
+      if (dateFilter) {
+        const filterDate = new Date();
+        switch (dateFilter) {
+          case 'last7days':
+            filterDate.setDate(filterDate.getDate() - 7);
+            break;
+          case 'last30days':
+            filterDate.setDate(filterDate.getDate() - 30);
+            break;
+          case 'last90days':
+            filterDate.setDate(filterDate.getDate() - 90);
+            break;
+        }
+        
+        if (dateFilter !== 'all') {
+          filteredVulns = filteredVulns.filter(vuln => {
+            if (!vuln.published_date) return false;
+            const publishedDate = new Date(vuln.published_date);
+            return publishedDate >= filterDate;
+          });
+        }
+      }
+      
+      setVulnerabilities(filteredVulns);
+      setTotal(response.total);
     } catch (err: any) {
       console.error('Error loading vulnerabilities:', err);
-      setError('Error loading vulnerabilities');
+      setError('Failed to load vulnerabilities');
     } finally {
       setLoading(false);
     }
@@ -71,6 +122,22 @@ const Vulnerabilities: React.FC = () => {
     }
   };
 
+  const getSeverityColorFromScore = (score?: number) => {
+    if (!score) return 'default';
+    if (score >= 9.0) return 'error';
+    if (score >= 7.0) return 'warning';
+    if (score >= 4.0) return 'info';
+    return 'success';
+  };
+
+  const getSeverityLabel = (score?: number) => {
+    if (!score) return 'Unknown';
+    if (score >= 9.0) return 'Critical';
+    if (score >= 7.0) return 'High';
+    if (score >= 4.0) return 'Medium';
+    return 'Low';
+  };
+
   const formatScore = (score?: number) => {
     if (!score) return 'N/A';
     return score.toFixed(1);
@@ -85,9 +152,30 @@ const Vulnerabilities: React.FC = () => {
     setPage(value);
   };
 
+  const handleRowClick = (cveId: string) => {
+    navigate(`/vulnerabilities/${cveId}`);
+  };
+
+  const handleSeverityFilterChange = (event: SelectChangeEvent<string>) => {
+    setSeverityFilter(event.target.value);
+    setPage(1);
+  };
+
+  const handleDateFilterChange = (event: SelectChangeEvent<string>) => {
+    setDateFilter(event.target.value);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setSeverityFilter('');
+    setDateFilter('');
+    setSearchTerm('');
+    setPage(1);
+  };
+
   if (loading && vulnerabilities.length === 0) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Vulnerabilities
         </Typography>
@@ -102,7 +190,7 @@ const Vulnerabilities: React.FC = () => {
 
   if (error) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Vulnerabilities
         </Typography>
@@ -120,7 +208,7 @@ const Vulnerabilities: React.FC = () => {
   const totalPages = Math.ceil(total / itemsPerPage);
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">
           Vulnerabilities ({total.toLocaleString()})
@@ -144,20 +232,59 @@ const Vulnerabilities: React.FC = () => {
         bgcolor: 'background.paper',
         boxShadow: 1
       }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search by CVE ID or description..."
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box display="flex" flexDirection="column" gap={2}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search by CVE ID or description..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>Severity</InputLabel>
+              <Select
+                value={severityFilter}
+                label="Severity"
+                onChange={handleSeverityFilterChange}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="critical">Critical</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="low">Low</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>Published</InputLabel>
+              <Select
+                value={dateFilter}
+                label="Published"
+                onChange={handleDateFilterChange}
+              >
+                <MenuItem value="">All time</MenuItem>
+                <MenuItem value="last7days">Last 7 days</MenuItem>
+                <MenuItem value="last30days">Last 30 days</MenuItem>
+                <MenuItem value="last90days">Last 90 days</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              onClick={clearFilters}
+              disabled={!severityFilter && !dateFilter && !searchTerm}
+            >
+              Clear Filters
+            </Button>
+          </Box>
+        </Box>
       </Paper>
 
       <TableContainer component={Paper}>
@@ -169,53 +296,75 @@ const Vulnerabilities: React.FC = () => {
               <TableCell>CVSS Score</TableCell>
               <TableCell>Severity</TableCell>
               <TableCell>Published</TableCell>
-              <TableCell>Affected Products</TableCell>
+              <TableCell>References</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {vulnerabilities.map((vuln) => (
-              <TableRow key={vuln.id} hover>
-                <TableCell>
-                  <Typography 
-                    variant="body2" 
-                    fontFamily="monospace"
-                    fontWeight="medium"
-                    color="primary"
-                  >
-                    {vuln.id}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ maxWidth: 400 }}>
-                    {vuln.description.length > 150 
-                      ? `${vuln.description.substring(0, 150)}...` 
-                      : vuln.description}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {formatScore(vuln.score)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={vuln.severity || 'Unknown'}
-                    color={getSeverityColor(vuln.severity)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(vuln.published_date).toLocaleDateString('en-US')}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {vuln.configurations.length} product(s)
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
+            {(vulnerabilities || []).map((vuln) => {
+              const description = vuln.descriptions?.find(d => d.lang === 'en')?.value || 
+                                 vuln.descriptions?.[0]?.value || 
+                                 vuln.description || 
+                                 'No description available';
+              
+              const baseScore = vuln.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore ||
+                               vuln.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore ||
+                               vuln.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore ||
+                               vuln.score;
+
+              return (
+                <TableRow 
+                  key={vuln.id} 
+                  hover
+                  onClick={() => handleRowClick(vuln.id)}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <TableCell>
+                    <Typography variant="subtitle2" color="primary" fontWeight="medium">
+                      {vuln.id}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography 
+                      variant="body2" 
+                      sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: 400,
+                      }}
+                    >
+                      {description}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {baseScore ? (
+                      <Chip
+                        label={`${baseScore.toFixed(1)} ${getSeverityLabel(baseScore)}`}
+                        color={getSeverityColorFromScore(baseScore) as any}
+                        size="small"
+                      />
+                    ) : (
+                      <Chip label="No Score" variant="outlined" size="small" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {vuln.published ? 
+                        new Date(vuln.published).toLocaleDateString() : 
+                        (vuln.published_date ? new Date(vuln.published_date).toLocaleDateString() : 'Unknown')
+                      }
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {vuln.references?.length || 0}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

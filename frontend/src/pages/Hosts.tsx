@@ -18,13 +18,20 @@ import {
   Avatar,
   Tooltip,
   Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Search,
   Computer,
   Visibility,
   Refresh,
-  FilterList,
+  Clear,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Host } from '../services/api';
@@ -36,6 +43,8 @@ const Hosts: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [osFilter, setOsFilter] = useState('');
+  const [lastSeenFilter, setLastSeenFilter] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,14 +52,42 @@ const Hosts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Filtrer les hosts basé sur le terme de recherche
-    const filtered = hosts.filter(host =>
+    // Filter hosts based on search term and filters
+    let filtered = hosts.filter(host =>
       host.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       host.ip_address.includes(searchTerm) ||
       host.os.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // OS Filter
+    if (osFilter) {
+      filtered = filtered.filter(host => 
+        host.os.name.toLowerCase().includes(osFilter.toLowerCase())
+      );
+    }
+
+    // Last Seen Filter
+    if (lastSeenFilter) {
+      const now = new Date();
+      filtered = filtered.filter(host => {
+        const lastSeen = new Date(host.updated_at);
+        const diffInMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
+        
+        switch (lastSeenFilter) {
+          case 'online':
+            return diffInMinutes < 10;
+          case 'recent':
+            return diffInMinutes >= 10 && diffInMinutes < 60;
+          case 'offline':
+            return diffInMinutes >= 60;
+          default:
+            return true;
+        }
+      });
+    }
+
     setFilteredHosts(filtered);
-  }, [hosts, searchTerm]);
+  }, [hosts, searchTerm, osFilter, lastSeenFilter]);
 
   const fetchHosts = async () => {
     try {
@@ -62,6 +99,12 @@ const Hosts: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setOsFilter('');
+    setLastSeenFilter('');
   };
 
   const getOSIcon = (osName: string) => {
@@ -105,13 +148,30 @@ const Hosts: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (lastSeen: string) => {
+    const now = new Date();
+    const lastSeenDate = new Date(lastSeen);
+    const diffInMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
+
+    if (diffInMinutes < 10) {
+      return 'Online';
+    } else if (diffInMinutes < 60) {
+      return 'Recent';
+    } else {
+      return 'Offline';
+    }
+  };
+
   const handleViewHost = (hostId: string) => {
     navigate(`/hosts/${hostId}`);
   };
 
+  // Get unique OS names for filter
+  const uniqueOSNames = [...new Set(hosts.map(host => host.os.name))];
+
   if (loading) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Hosts
         </Typography>
@@ -126,7 +186,7 @@ const Hosts: React.FC = () => {
 
   if (error) {
     return (
-      <Box>
+      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
         <Typography variant="h4" gutterBottom>
           Hosts
         </Typography>
@@ -142,7 +202,7 @@ const Hosts: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">
           Hosts ({filteredHosts.length})
@@ -156,37 +216,68 @@ const Hosts: React.FC = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ 
-        mb: 3, 
-        p: 2, 
+      {/* Fixed Filter Bar */}
+      <Card sx={{ 
+        mb: 3,
         position: 'sticky', 
         top: 0, 
-        zIndex: 10,
-        bgcolor: 'background.paper',
-        boxShadow: 1
+        zIndex: 100,
+        boxShadow: 3,
       }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search by name, IP or OS..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setSearchTerm('')} edge="end">
-                  ×
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Paper>
+        <CardContent>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+            <TextField
+              sx={{ minWidth: 300 }}
+              variant="outlined"
+              placeholder="Search by name, IP or OS..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+            />
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Operating System</InputLabel>
+              <Select
+                value={osFilter}
+                label="Operating System"
+                onChange={(e) => setOsFilter(e.target.value)}
+              >
+                <MenuItem value="">All OS</MenuItem>
+                {uniqueOSNames.map((os) => (
+                  <MenuItem key={os} value={os}>{os}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={lastSeenFilter}
+                label="Status"
+                onChange={(e) => setLastSeenFilter(e.target.value)}
+              >
+                <MenuItem value="">All Status</MenuItem>
+                <MenuItem value="online">Online (&lt; 10 min)</MenuItem>
+                <MenuItem value="recent">Recent (&lt; 1 hour)</MenuItem>
+                <MenuItem value="offline">Offline (&gt; 1 hour)</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              startIcon={<Clear />}
+              onClick={clearFilters}
+              size="small"
+            >
+              Clear Filters
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
       <TableContainer component={Paper}>
         <Table>
@@ -196,7 +287,8 @@ const Hosts: React.FC = () => {
               <TableCell>IP Address</TableCell>
               <TableCell>Operating System</TableCell>
               <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
+              <TableCell>Last Seen</TableCell>
+              <TableCell align="center">Status</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -249,7 +341,14 @@ const Hosts: React.FC = () => {
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
-                  <Tooltip title="View details">
+                  <Chip
+                    label={getStatusLabel(host.updated_at)}
+                    color={getLastSeenColor(host.updated_at) as any}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="View inventory">
                     <IconButton
                       onClick={() => handleViewHost(host._id)}
                       color="primary"
@@ -271,8 +370,8 @@ const Hosts: React.FC = () => {
             No hosts found
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {searchTerm
-              ? 'Try modifying your search'
+            {searchTerm || osFilter || lastSeenFilter
+              ? 'Try modifying your search or filters'
               : 'No hosts are currently registered'
             }
           </Typography>
