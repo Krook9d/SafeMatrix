@@ -8,6 +8,8 @@ import Layout from './components/Layout';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
 import Hosts from './pages/Hosts';
+import Vulnerabilities from './pages/Vulnerabilities';
+import Inventory from './pages/Inventory';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -220,24 +222,42 @@ const App: React.FC = () => {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="hosts" element={<Hosts />} />
-              <Route path="vulnerabilities" element={
-                <div style={{ padding: '20px' }}>
-                  <h2>Vulnérabilités</h2>
-                  <p>Page en cours de développement...</p>
-                </div>
-              } />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/hosts" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Hosts />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/vulnerabilities" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Vulnerabilities />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/inventory" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Inventory />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>
       </AuthProvider>

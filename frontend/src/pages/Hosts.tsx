@@ -156,7 +156,15 @@ const Hosts: React.FC = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ mb: 3, p: 2 }}>
+      <Paper sx={{ 
+        mb: 3, 
+        p: 2, 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 10,
+        bgcolor: 'background.paper',
+        boxShadow: 1
+      }}>
         <TextField
           fullWidth
           variant="outlined"

@@ -79,12 +79,58 @@ export interface Software {
 }
 
 export interface Vulnerability {
+  id: string;
+  description: string;
+  score?: number;
+  severity?: string;
+  published_date: string;
+  last_modified_date: string;
+  configurations: CPE[];
+}
+
+export interface CPE {
+  criteria: string;
+  matchCriteriaId: string;
+  vulnerable: boolean;
+  part?: string;
+  vendor?: string;
+  product?: string;
+  version?: string;
+  versionStartIncluding?: string;
+  versionEndIncluding?: string;
+  versionStartExcluding?: string;
+  versionEndExcluding?: string;
+}
+
+export interface VulnerabilityCollection {
+  total: number;
+  items: Vulnerability[];
+}
+
+export interface InventoryVulnerability {
   cve_id: string;
   description: string;
-  cvss_score: number;
-  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  published_date: string;
-  reference_urls: string[];
+  score: number;
+  url?: string;
+}
+
+export interface Inventory {
+  _id: string;
+  host_id: string;
+  software_name: string;
+  version: string;
+  install_date?: string;
+  vulnerabilities: InventoryVulnerability[];
+  created_at: string;
+}
+
+export interface SoftwareSummary {
+  software_name: string;
+  total_installations: number;
+  unique_versions: number;
+  latest_version: string;
+  hosts_count: number;
+  vulnerability_count: number;
 }
 
 export interface DashboardStats {
@@ -148,15 +194,37 @@ export const hostsAPI = {
 
 // Vulnerabilities
 export const vulnerabilitiesAPI = {
-  search: async (query: string): Promise<Vulnerability[]> => {
-    const response = await apiClient.get<Vulnerability[]>(
-      `/api/v1/vulnerabilities/search?q=${encodeURIComponent(query)}`
-    );
+  getAll: async (skip = 0, limit = 100, search?: string): Promise<VulnerabilityCollection> => {
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    if (search) {
+      params.append('search', search);
+    }
+    
+    const response = await apiClient.get(`/api/v1/vulnerabilities/?${params}`);
+    return response.data;
+  },
+};
+
+// Inventory
+export const inventoryAPI = {
+  getAll: async (host_id?: string, skip = 0, limit = 100): Promise<Inventory[]> => {
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    if (host_id) {
+      params.append('host_id', host_id);
+    }
+    
+    const response = await apiClient.get(`/api/v1/inventories/?${params}`);
     return response.data;
   },
 
-  getById: async (cveId: string): Promise<Vulnerability> => {
-    const response = await apiClient.get<Vulnerability>(`/api/v1/vulnerabilities/${cveId}`);
+  getSoftwareSummary: async (): Promise<SoftwareSummary[]> => {
+    const response = await apiClient.get('/api/v1/inventory/software-summary');
     return response.data;
   },
 };

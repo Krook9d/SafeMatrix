@@ -26,8 +26,9 @@ import {
   Security,
   AccountCircle,
   Logout,
+  Inventory2,
 } from '@mui/icons-material';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const drawerWidth = 240;
@@ -42,9 +43,14 @@ const navigationItems: NavigationItem[] = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Hosts', icon: <Computer />, path: '/hosts' },
   { text: 'Vulnerabilities', icon: <Security />, path: '/vulnerabilities' },
+  { text: 'Inventory', icon: <Inventory2 />, path: '/inventory' },
 ];
 
-const Layout: React.FC = () => {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   
@@ -210,7 +216,7 @@ const Layout: React.FC = () => {
         }}
       >
         <Toolbar />
-        <Outlet />
+        {children}
       </Box>
     </Box>
   );
