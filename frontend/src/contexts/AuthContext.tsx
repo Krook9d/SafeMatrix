@@ -51,13 +51,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Attempting login for:', username);
       const response = await authAPI.login({ username, password });
       console.log('Login response:', response);
+      
+      if (!response.access_token) {
+        throw new Error('No access token received');
+      }
+      
       localStorage.setItem('access_token', response.access_token);
+      console.log('Token stored in localStorage');
       
       const currentUser = await authAPI.getCurrentUser();
       console.log('Current user:', currentUser);
       setUser(currentUser);
-    } catch (error) {
+      console.log('Login successful');
+    } catch (error: any) {
       console.error('Login error:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       throw error;
     }
   };

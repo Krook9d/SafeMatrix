@@ -42,7 +42,7 @@ apiClient.interceptors.response.use(
 export interface User {
   id: number;
   username: string;
-  is_active: boolean;
+  role: string;
   created_at: string;
 }
 
