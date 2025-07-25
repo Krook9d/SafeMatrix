@@ -111,6 +111,9 @@ The API will then be accessible at `http://127.0.0.1:8000`.
 Navigate to the `frontend/` folder and follow these steps:
 
 **a. Install dependencies**
+
+Install npm : https://nodejs.org/en/download
+
 ```bash
 npm install
 ```
