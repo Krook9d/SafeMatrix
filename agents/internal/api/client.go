@@ -39,6 +39,18 @@ type APIResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+type SoftwareItem struct {
+	SoftwareName string `json:"software_name"`
+	Version      string `json:"version"`
+	Vendor       string `json:"vendor"`
+	InstallDate  string `json:"install_date"`
+}
+
+type InventorySyncRequest struct {
+	HostID       string         `json:"host_id"`
+	SoftwareList []SoftwareItem `json:"software_list"`
+}
+
 // NewClient creates a new API client
 func NewClient(baseURL string) *Client {
 	return &Client{
@@ -112,54 +124,68 @@ func (c *Client) RegisterHost(hostInfo *inventory.HostInfo) (string, error) {
 	return "", fmt.Errorf("no ID found in response")
 }
 
-// SubmitInventory submits inventory data to the SafeMatrix backend
+// SubmitInventory submits inventory data to the SafeMatrix backend using sync endpoint
 func (c *Client) SubmitInventory(hostID string, hostInfo *inventory.HostInfo) error {
-	fmt.Printf("Submitting %d software items...\n", len(hostInfo.Software))
+	fmt.Printf("Synchronizing %d software items...\n", len(hostInfo.Software))
 	
-	successCount := 0
-	errorCount := 0
-	
-	for i, software := range hostInfo.Software {
-		request := InventoryCreateRequest{
-			HostID:       hostID,
+	// Préparer la liste des logiciels pour la synchronisation
+	softwareList := make([]SoftwareItem, 0, len(hostInfo.Software))
+	for _, software := range hostInfo.Software {
+		softwareList = append(softwareList, SoftwareItem{
 			SoftwareName: software.Name,
 			Version:      software.Version,
-		}
+			Vendor:       software.Vendor,
+			InstallDate:  software.InstallDate,
+		})
+	}
+	
+	syncRequest := InventorySyncRequest{
+		HostID:       hostID,
+		SoftwareList: softwareList,
+	}
 
-		jsonData, err := json.Marshal(request)
-		if err != nil {
-			errorCount++
-			continue
-		}
+	jsonData, err := json.Marshal(syncRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal sync request: %v", err)
+	}
 
-		resp, err := c.httpClient.Post(
-			c.baseURL+"/api/v1/agents/inventory",
-			"application/json",
-			bytes.NewBuffer(jsonData),
-		)
-		if err != nil {
-			errorCount++
-			continue
-		}
-		
-		if resp.StatusCode == http.StatusCreated {
-			successCount++
-		} else {
-			errorCount++
-		}
-		resp.Body.Close()
+	resp, err := c.httpClient.Post(
+		c.baseURL+"/api/v1/agents/sync-inventory",
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to sync inventory: %v", err)
+	}
+	defer resp.Body.Close()
 
-		// Progress indicator for large inventories
-		if (i+1)%50 == 0 {
-			fmt.Printf("Progress: %d/%d items processed...\n", i+1, len(hostInfo.Software))
+	// Lire la réponse pour récupérer les statistiques
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read sync response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to sync inventory, status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	// Parser la réponse pour afficher les statistiques
+	var syncResponse map[string]interface{}
+	if err := json.Unmarshal(body, &syncResponse); err == nil {
+		if stats, ok := syncResponse["statistics"].(map[string]interface{}); ok {
+			added := int(stats["added"].(float64))
+			updated := int(stats["updated"].(float64))
+			removed := int(stats["removed"].(float64))
+			unchanged := int(stats["unchanged"].(float64))
+			
+			fmt.Printf("✅ Inventory synchronized successfully!\n")
+			fmt.Printf("  📦 Added: %d new software\n", added)
+			fmt.Printf("  🔄 Updated: %d software (version changes)\n", updated)
+			fmt.Printf("  🗑️ Removed: %d obsolete software\n", removed)
+			fmt.Printf("  ✓ Unchanged: %d software\n", unchanged)
 		}
 	}
 
-	if errorCount > 0 {
-		return fmt.Errorf("submitted %d items successfully, %d failed", successCount, errorCount)
-	}
-
-	fmt.Printf("Successfully submitted %d software items\n", successCount)
 	return nil
 }
 

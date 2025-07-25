@@ -7,7 +7,7 @@ go mod tidy
 
 :: Build for Windows
 echo Building for Windows...
-go build -o safematrix-agent.exe ./cmd/main.go
+go build -o safematrix-agent.exe ./cmd/main-cli.go
 
 if %ERRORLEVEL% EQU 0 (
     echo.
