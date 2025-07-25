@@ -4,6 +4,7 @@ package inventory
 
 import (
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ type HostInfo struct {
 	OSVersion   string     `json:"os_version"`
 	Architecture string    `json:"architecture"`
 	IP          string     `json:"ip"`
+	MACAddress  string     `json:"mac_address"`
 	LastSeen    time.Time  `json:"last_seen"`
 	Software    []Software `json:"software"`
 }
@@ -39,6 +41,15 @@ func CollectInventory() (*HostInfo, error) {
 	// Get system information using WMI
 	if err := getSystemInfo(hostInfo); err != nil {
 		return nil, fmt.Errorf("failed to get system info: %v", err)
+	}
+
+	// Get MAC address
+	macAddress, err := getMACAddress()
+	if err != nil {
+		// Don't fail the entire operation, just log and continue
+		fmt.Printf("Warning: Could not get MAC address: %v\n", err)
+	} else {
+		hostInfo.MACAddress = macAddress
 	}
 
 	// Get installed software from Registry (much faster and more complete)
@@ -274,4 +285,28 @@ func isSystemComponent(software Software) bool {
 	}
 
 	return false
+}
+
+// getMACAddress gets the MAC address of the first active network interface
+func getMACAddress() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, iface := range interfaces {
+		// Skip loopback and interfaces that are down
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		// Skip interfaces without hardware address
+		if len(iface.HardwareAddr) == 0 {
+			continue
+		}
+
+		return iface.HardwareAddr.String(), nil
+	}
+
+	return "", fmt.Errorf("no suitable network interface found")
 } 

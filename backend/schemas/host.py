@@ -18,6 +18,7 @@ class HostBase(BaseModel):
     """
     hostname: str = Field(..., examples=["my-windows-pc"])
     ip_address: IPv4Address = Field(..., examples=["192.168.1.10"])
+    mac_address: Optional[str] = Field(None, examples=["00:1B:44:11:3A:B7"])
     os: HostOS
 
 

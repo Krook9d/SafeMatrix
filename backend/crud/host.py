@@ -1,5 +1,6 @@
 import datetime
 from opensearchpy import OpenSearch, NotFoundError
+from typing import Optional
 
 from ..schemas.host import HostCreate
 from ..core.opensearch_client import INDEX_HOSTS
@@ -57,6 +58,121 @@ def get_host(client: OpenSearch, *, host_id: str) -> dict | None:
         return document
     except NotFoundError:
         return None
+
+
+def find_host_by_mac_or_hostname_ip(client: OpenSearch, *, mac_address: Optional[str] = None, hostname: Optional[str] = None, ip_address: Optional[str] = None) -> dict | None:
+    """
+    Find an existing host by MAC address or by hostname + IP address combination.
+    
+    Args:
+        client: The OpenSearch client instance.
+        mac_address: MAC address to search for (preferred identifier)
+        hostname: hostname to search for (used with ip_address as fallback)
+        ip_address: IP address to search for (used with hostname as fallback)
+    
+    Returns:
+        The host document if found, otherwise None.
+    """
+    print(f"Debug: find_host_by_mac_or_hostname_ip called with mac_address='{mac_address}', hostname='{hostname}', ip_address='{ip_address}'")
+    
+    # Build search query
+    must_queries = []
+    
+    # Prefer MAC address as unique identifier if available
+    if mac_address:
+        must_queries.append({"term": {"mac_address": mac_address}})
+        print(f"Debug: Using MAC address search")
+    elif hostname and ip_address:
+        # Fallback to hostname + IP combination
+        # hostname is text type, so use match query
+        must_queries.append({"match": {"hostname": hostname}})
+        # ip_address is ip type, so use term query
+        must_queries.append({"term": {"ip_address": str(ip_address)}})
+        print(f"Debug: Using hostname+IP search")
+    else:
+        print(f"Debug: Not enough info to search, returning None")
+        return None  # Not enough info to search
+    
+    try:
+        # Debug: print the search query
+        search_query = {
+            "query": {
+                "bool": {
+                    "must": must_queries
+                }
+            },
+            "size": 10  # Increase size to see more results for debugging
+        }
+        print(f"Debug: Searching for host with query: {search_query}")
+        
+        response = client.search(
+            index=INDEX_HOSTS,
+            body=search_query
+        )
+        
+        hits = response.get("hits", {}).get("hits", [])
+        print(f"Debug: Found {len(hits)} hosts")
+        
+        if hits:
+            for i, hit in enumerate(hits):
+                doc = hit.get("_source", {})
+                print(f"Debug: Hit {i}: hostname='{doc.get('hostname')}' ip='{doc.get('ip_address')}' mac='{doc.get('mac_address')}' id='{hit['_id']}'")
+            
+            # Return the first match
+            doc = hits[0].get("_source", {})
+            doc["_id"] = hits[0]["_id"]
+            print(f"Debug: Returning existing host: {doc['_id']}")
+            return doc
+        
+        print("Debug: No existing host found")
+        return None
+    except Exception as e:
+        # If search fails, return None to fallback to creation
+        print(f"Debug: Search failed with error: {e}")
+        return None
+
+
+def find_or_create_host(client: OpenSearch, *, host_in: HostCreate) -> dict:
+    """
+    Find an existing host or create a new one if not found.
+    
+    Args:
+        client: The OpenSearch client instance.
+        host_in: The host data to find or create.
+    
+    Returns:
+        The existing or newly created host document from OpenSearch.
+    """
+    # Try to find existing host
+    existing_host = find_host_by_mac_or_hostname_ip(
+        client=client,
+        mac_address=host_in.mac_address,
+        hostname=host_in.hostname,
+        ip_address=str(host_in.ip_address)
+    )
+    
+    if existing_host:
+        # Update the existing host's updated_at timestamp and other fields
+        now = datetime.datetime.now(datetime.timezone.utc)
+        document = host_in.model_dump(mode="json")
+        document["updated_at"] = now
+        
+        try:
+            client.update(
+                index=INDEX_HOSTS,
+                id=existing_host["_id"],
+                body={"doc": document},
+                refresh=True
+            )
+            # Return the updated host with the same ID
+            existing_host.update(document)
+            return existing_host
+        except Exception:
+            # If update fails, return existing host as-is
+            return existing_host
+    
+    # Host not found, create a new one
+    return create_host(client=client, host_in=host_in)
 
 
 def create_host(client: OpenSearch, *, host_in: HostCreate) -> dict:

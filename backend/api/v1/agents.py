@@ -17,11 +17,13 @@ def register_agent_host(
     host_in: schemas_host.HostCreate,
 ):
     """
-    Register a new host from an agent.
+    Register a new host from an agent or return existing host if already registered.
     This endpoint is designed for agent use and doesn't require authentication.
+    Uses MAC address or hostname+IP to identify existing hosts.
     """
     try:
-        created_host = crud_host.create_host(client=client, host_in=host_in)
+        # Use find_or_create_host to avoid duplicates
+        created_host = crud_host.find_or_create_host(client=client, host_in=host_in)
         return created_host
     except Exception as e:
         raise HTTPException(
@@ -41,12 +43,16 @@ def submit_agent_inventory(
     This endpoint is designed for agent use and doesn't require authentication.
     """
     try:
+        print(f"Debug: Received inventory submission: {inventory_in}")
         created_inventory = crud_inventory.create_inventory(client=client, inventory_in=inventory_in)
+        print(f"Debug: Successfully created inventory: {created_inventory.get('_id', 'unknown')}")
         return created_inventory
     except ValueError as e:
         # This catches the error if the host_id is not found
+        print(f"Debug: ValueError in inventory submission: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        print(f"Debug: Exception in inventory submission: {e}")
         raise HTTPException(
             status_code=500, 
             detail=f"An unexpected error occurred: {e}"

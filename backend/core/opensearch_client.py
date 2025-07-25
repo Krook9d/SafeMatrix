@@ -29,6 +29,7 @@ def create_indexes():
         "properties": {
             "hostname": {"type": "text"},
             "ip_address": {"type": "ip"},
+            "mac_address": {"type": "keyword"},
             "os": {
                 "properties": {
                     "name": {"type": "keyword"},

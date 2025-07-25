@@ -22,16 +22,16 @@ type HostOS struct {
 }
 
 type HostCreateRequest struct {
-	Hostname  string `json:"hostname"`
-	IPAddress string `json:"ip_address"`
-	OS        HostOS `json:"os"`
+	Hostname   string `json:"hostname"`
+	IPAddress  string `json:"ip_address"`
+	MACAddress string `json:"mac_address,omitempty"`
+	OS         HostOS `json:"os"`
 }
 
 type InventoryCreateRequest struct {
-	HostID       string    `json:"host_id"`
-	SoftwareName string    `json:"software_name"`
-	Version      string    `json:"version"`
-	InstallDate  *time.Time `json:"install_date,omitempty"`
+	HostID       string `json:"host_id"`
+	SoftwareName string `json:"software_name"`
+	Version      string `json:"version"`
 }
 
 type APIResponse struct {
@@ -58,8 +58,9 @@ func (c *Client) RegisterHost(hostInfo *inventory.HostInfo) (string, error) {
 	}
 
 	request := HostCreateRequest{
-		Hostname:  hostInfo.Hostname,
-		IPAddress: ipAddress,
+		Hostname:   hostInfo.Hostname,
+		IPAddress:  ipAddress,
+		MACAddress: hostInfo.MACAddress,
 		OS: HostOS{
 			Name:    hostInfo.OS,
 			Version: hostInfo.OSVersion,

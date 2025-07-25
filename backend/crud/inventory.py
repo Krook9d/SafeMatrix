@@ -24,7 +24,7 @@ def get_inventories(
     """
     query = {"match_all": {}}
     if host_id:
-        query = {"term": {"host_id.keyword": host_id}}
+        query = {"term": {"host_id": host_id}}
 
     response = client.search(
         index=INDEX_INVENTORIES,
