@@ -1,85 +1,85 @@
 # SafeMatrix Agent
 
-Agent Go pour la collecte d'inventaire logiciel et la surveillance des vulnérabilités.
+Go-based agent for software inventory collection and vulnerability monitoring.
 
-## 📋 Fonctionnalités
+## 📋 Features
 
-- ✅ **Interface graphique** moderne avec Fyne
-- ✅ **Interface en ligne de commande** complète
-- ✅ **Configuration flexible** (serveur, port, intervalle)
-- ✅ **Collecte automatique** d'inventaire Windows
-- ✅ **Communication sécurisée** avec le backend SafeMatrix
-- ✅ **Mode daemon** pour surveillance continue
+- ✅ **Modern graphical interface** using Fyne  
+- ✅ **Full command-line interface**  
+- ✅ **Flexible configuration** (server, port, interval)  
+- ✅ **Automatic Windows inventory collection**  
+- ✅ **Secure communication** with the SafeMatrix backend  
+- ✅ **Daemon mode** for continuous monitoring  
 
 ## 🚀 Installation
 
-### Prérequis
+### Prerequisites
 
-- Go 1.21 ou supérieur
-- Windows (support Linux/macOS en développement)
+- Go 1.21 or higher  
+- Windows (Linux/macOS support in development)  
 
-### Compilation
+### Build
 
 ```bash
-# Cloner le repository
+# Clone the repository
 cd agents/
 
-# Télécharger les dépendances
+# Download dependencies
 go mod tidy
 
-# Compiler l'agent
+# Build the agent
 go build -o safematrix-agent.exe ./cmd/main.go
 ```
 
-### Build pour Windows (depuis Linux/macOS)
+### Build for Windows (from Linux/macOS)
 
 ```bash
-# Cross-compilation pour Windows
+# Cross-compilation for Windows
 GOOS=windows GOARCH=amd64 go build -o safematrix-agent.exe ./cmd/main.go
 ```
 
-## 🎮 Utilisation
+## 🎮 Usage
 
-### Mode GUI (Recommandé)
+### GUI Mode (Recommended)
 
 ```bash
-# Lancer l'interface graphique
+# Launch the graphical interface
 ./safematrix-agent.exe
-# ou
+# or
 ./safematrix-agent.exe --gui
 ```
 
-L'interface graphique permet de :
-- Configurer l'adresse du serveur SafeMatrix
-- Tester la connexion
-- Lancer des scans manuels
-- Démarrer/arrêter le mode daemon
-- Voir les logs en temps réel
+The GUI allows you to:
+- Configure the SafeMatrix server address  
+- Test connection  
+- Launch manual scans  
+- Start/stop daemon mode  
+- View real-time logs  
 
-### Mode CLI
+### CLI Mode
 
 ```bash
-# Afficher l'aide
+# Show help
 ./safematrix-agent.exe help
 
-# Configurer le serveur
+# Configure server
 ./safematrix-agent.exe config --host 192.168.1.100 --port 8000
 
-# Tester la connexion
+# Test connection
 ./safematrix-agent.exe test
 
-# Lancer un scan unique
+# Run a one-time scan
 ./safematrix-agent.exe scan
 
-# Mode daemon (surveillance continue)
+# Daemon mode (continuous monitoring)
 ./safematrix-agent.exe daemon
 ```
 
 ## ⚙️ Configuration
 
-L'agent stocke sa configuration dans `~/.safematrix/config.json`.
+The agent stores its configuration in `~/.safematrix/config.json`.
 
-### Configuration par défaut
+### Default Configuration
 
 ```json
 {
@@ -90,29 +90,29 @@ L'agent stocke sa configuration dans `~/.safematrix/config.json`.
 }
 ```
 
-### Paramètres
+### Parameters
 
-- **server_host** : Adresse IP du serveur SafeMatrix
-- **server_port** : Port du serveur SafeMatrix  
-- **agent_id** : Identifiant unique de l'agent
-- **collect_interval** : Intervalle entre les scans (en minutes)
+- **server_host**: SafeMatrix server IP address  
+- **server_port**: SafeMatrix server port  
+- **agent_id**: Unique identifier for the agent  
+- **collect_interval**: Time between scans (in minutes)  
 
-## 🔧 Fonctionnement
+## 🔧 How It Works
 
-### Collecte d'inventaire
+### Inventory Collection
 
-L'agent utilise WMI (Windows Management Instrumentation) pour :
-- Identifier le hostname, OS, architecture
-- Lister tous les logiciels installés via `Win32_Product`
-- Récupérer nom, version, éditeur de chaque logiciel
+The agent uses WMI (Windows Management Instrumentation) to:
+- Identify hostname, OS, and architecture  
+- List all installed software via `Win32_Product`  
+- Retrieve name, version, and vendor for each software  
 
-### Communication avec SafeMatrix
+### Communication with SafeMatrix
 
-1. **Enregistrement du host** : `POST /api/v1/hosts/`
-2. **Soumission d'inventaire** : `POST /api/v1/inventories/`
-3. **Test de santé** : `GET /api/v1/health/`
+1. **Host registration**: `POST /api/v1/hosts/`  
+2. **Inventory submission**: `POST /api/v1/inventories/`  
+3. **Health check**: `GET /api/v1/health/`  
 
-### Données collectées
+### Collected Data Example
 
 ```json
 {
@@ -136,48 +136,48 @@ L'agent utilise WMI (Windows Management Instrumentation) pour :
 ```
 safematrix-agent/
 ├── cmd/
-│   └── main.go              # Point d'entrée
+│   └── main.go              # Entry point
 ├── internal/
-│   ├── config/             # Gestion configuration
-│   ├── inventory/          # Collecte inventaire Windows
-│   ├── api/               # Client API SafeMatrix
-│   ├── cli/               # Interface ligne de commande
-│   └── gui/               # Interface graphique
+│   ├── config/              # Config management
+│   ├── inventory/           # Windows inventory collection
+│   ├── api/                 # SafeMatrix API client
+│   ├── cli/                 # Command-line interface
+│   └── gui/                 # Graphical interface
 ├── go.mod
 └── README.md
 ```
 
-## 🐛 Débogage
+## 🐛 Debugging
 
 ### Logs
 
-- **GUI** : Logs visibles dans l'interface
-- **CLI** : Sortie standard/erreur
+- **GUI**: Logs visible in the interface  
+- **CLI**: Printed to standard output/error  
 
-### Problèmes courants
+### Common Issues
 
-1. **"Connection failed"**
-   - Vérifier que le serveur SafeMatrix est démarré
-   - Confirmer l'adresse IP et le port
-   - Vérifier le pare-feu
+1. **"Connection failed"**  
+   - Ensure SafeMatrix backend is running  
+   - Confirm IP address and port  
+   - Check firewall settings  
 
-2. **"Scan failed"**
-   - Lancer en tant qu'administrateur
-   - WMI peut nécessiter des privilèges élevés
+2. **"Scan failed"**  
+   - Run as Administrator  
+   - WMI may require elevated privileges  
 
-3. **"No software found"**
-   - `Win32_Product` peut être lent/incomplet
-   - Certains logiciels ne sont pas répertoriés
+3. **"No software found"**  
+   - `Win32_Product` can be slow/incomplete  
+   - Some software might not be listed  
 
 ## 🚧 Roadmap
 
-- [ ] Support Linux (utilisation de `dpkg`, `rpm`)
-- [ ] Support macOS (utilisation de `brew`, `pkgutil`)
-- [ ] Collecte de services/processus actifs
-- [ ] Détection de vulnérabilités locales
-- [ ] Installation en tant que service Windows
-- [ ] Interface web embarquée
+- [ ] Linux support (using `dpkg`, `rpm`)  
+- [ ] macOS support (using `brew`, `pkgutil`)  
+- [ ] Collect active services/processes  
+- [ ] Detect local vulnerabilities  
+- [ ] Install as Windows service  
+- [ ] Embedded web interface  
 
-## 📝 Licence
+## 📝 License
 
-Ce projet fait partie de SafeMatrix et suit la même licence. 
+This project is part of SafeMatrix and follows the same license.
