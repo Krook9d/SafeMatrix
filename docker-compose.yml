@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:13-alpine
@@ -19,7 +21,7 @@ services:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - plugins.security.disabled=true # Désactive la sécurité pour le dev
+      - plugins.security.disabled=true # Disabled for dev
     ulimits:
       memlock:
         soft: -1
@@ -34,6 +36,19 @@ services:
       - opensearch_data:/usr/share/opensearch/data
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+
 volumes:
   postgres_data:
-  opensearch_data: 
+  opensearch_data:
