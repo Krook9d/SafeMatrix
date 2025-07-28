@@ -22,12 +22,8 @@ def get_dashboard_stats(
         index=INDEX_HOSTS,
         body={
             "size": 0,
+            "track_total_hits": True,
             "aggs": {
-                "total_hosts": {
-                    "value_count": {
-                        "field": "hostname.keyword"
-                    }
-                },
                 "os_distribution": {
                     "terms": {
                         "field": "os.name.keyword",
@@ -43,12 +39,8 @@ def get_dashboard_stats(
         index=INDEX_INVENTORIES,
         body={
             "size": 0,
+            "track_total_hits": True,
             "aggs": {
-                "total_software": {
-                    "value_count": {
-                        "field": "software_name.keyword"
-                    }
-                },
                 "unique_hosts": {
                     "cardinality": {
                         "field": "host_id"
@@ -63,6 +55,7 @@ def get_dashboard_stats(
         index=INDEX_VULNERABILITIES,
         body={
             "size": 10,  # Get recent vulnerabilities
+            "track_total_hits": True,
             "sort": [
                 {
                     "published": {
@@ -71,11 +64,6 @@ def get_dashboard_stats(
                 }
             ],
             "aggs": {
-                "total_vulnerabilities": {
-                    "value_count": {
-                        "field": "id"
-                    }
-                },
                 "severity_distribution": {
                     "terms": {
                         "field": "severity.keyword",
@@ -94,9 +82,9 @@ def get_dashboard_stats(
     )
     
     # Extract data from responses
-    total_hosts = hosts_response.get("aggregations", {}).get("total_hosts", {}).get("value", 0)
-    total_software = inventories_response.get("aggregations", {}).get("total_software", {}).get("value", 0)
-    total_vulnerabilities = vulnerabilities_response.get("aggregations", {}).get("total_vulnerabilities", {}).get("value", 0)
+    total_hosts = hosts_response.get("hits", {}).get("total", {}).get("value", 0)
+    total_software = inventories_response.get("hits", {}).get("total", {}).get("value", 0)
+    total_vulnerabilities = vulnerabilities_response.get("hits", {}).get("total", {}).get("value", 0)
     critical_vulnerabilities = vulnerabilities_response.get("aggregations", {}).get("critical_vulnerabilities", {}).get("doc_count", 0)
     
     # OS distribution
