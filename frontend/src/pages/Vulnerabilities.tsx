@@ -40,6 +40,7 @@ const Vulnerabilities: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [severityFilter, setSeverityFilter] = useState('');
@@ -144,7 +145,11 @@ const Vulnerabilities: React.FC = () => {
   };
 
   const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
+    setSearchInput(value);
+  };
+
+  const submitSearch = () => {
+    setSearchTerm(searchInput);
     setPage(1); // Reset to first page when searching
   };
 
@@ -170,6 +175,7 @@ const Vulnerabilities: React.FC = () => {
     setSeverityFilter('');
     setDateFilter('');
     setSearchTerm('');
+    setSearchInput('');
     setPage(1);
   };
 
@@ -233,20 +239,23 @@ const Vulnerabilities: React.FC = () => {
         boxShadow: 1
       }}>
         <Box display="flex" flexDirection="column" gap={2}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search by CVE ID or description..."
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Box display="flex" gap={2}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search by CVE ID or description..."
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button variant="contained" onClick={submitSearch}>Search</Button>
+          </Box>
           <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
             <FormControl sx={{ minWidth: 150 }}>
               <InputLabel>Severity</InputLabel>
@@ -279,7 +288,7 @@ const Vulnerabilities: React.FC = () => {
               variant="outlined"
               startIcon={<FilterList />}
               onClick={clearFilters}
-              disabled={!severityFilter && !dateFilter && !searchTerm}
+              disabled={!severityFilter && !dateFilter && !searchTerm && !searchInput}
             >
               Clear Filters
             </Button>
