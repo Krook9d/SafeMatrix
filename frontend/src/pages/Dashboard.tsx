@@ -14,6 +14,7 @@ import {
   Paper,
   Avatar,
 } from '@mui/material';
+import { PieChart } from '@mui/x-charts/PieChart';
 import {
   Computer,
   Security,
@@ -22,28 +23,43 @@ import {
   BugReport,
   TrendingUp,
 } from '@mui/icons-material';
-import type { DashboardStats } from '../services/api';
+import type { DashboardSummary, VulnerabilityStats } from '../services/api';
 import { dashboardAPI } from '../services/api';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [vulnStats, setVulnStats] = useState<VulnerabilityStats | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [loadingVuln, setLoadingVuln] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchSummary = async () => {
       try {
-        const data = await dashboardAPI.getStats();
-        setStats(data);
+        const data = await dashboardAPI.getSummary();
+        setSummary(data);
       } catch (err: any) {
-        console.error('Dashboard error:', err);
+        console.error('Dashboard summary error:', err);
         setError('Error loading dashboard data');
       } finally {
-        setLoading(false);
+        setLoadingSummary(false);
       }
     };
 
-    fetchDashboardData();
+    const fetchVuln = async () => {
+      try {
+        const data = await dashboardAPI.getVulnerabilityStats();
+        setVulnStats(data);
+      } catch (err: any) {
+        console.error('Dashboard vuln error:', err);
+        setError('Error loading vulnerability data');
+      } finally {
+        setLoadingVuln(false);
+      }
+    };
+
+    fetchSummary();
+    fetchVuln();
   }, []);
 
   const getSeverityColor = (severity: string) => {
@@ -53,6 +69,16 @@ const Dashboard: React.FC = () => {
       case 'MEDIUM': return 'info';
       case 'LOW': return 'success';
       default: return 'default';
+    }
+  };
+
+  const getSeverityColorHex = (severity: string) => {
+    switch (severity) {
+      case 'CRITICAL': return '#d32f2f';
+      case 'HIGH': return '#ed6c02';
+      case 'MEDIUM': return '#0288d1';
+      case 'LOW': return '#2e7d32';
+      default: return '#9e9e9e';
     }
   };
 
@@ -66,25 +92,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Dashboard
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-          {[...Array(4)].map((_, index) => (
-            <Card key={index} sx={{ minWidth: 250 }}>
-              <CardContent>
-                <Skeleton variant="rectangular" height={100} />
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
@@ -95,8 +102,6 @@ const Dashboard: React.FC = () => {
       </Box>
     );
   }
-
-  if (!stats) return null;
 
   return (
     <Box sx={{ width: '100%', maxWidth: 'none', px: 3 }}>
@@ -117,7 +122,7 @@ const Dashboard: React.FC = () => {
                   Total Hosts
                 </Typography>
                 <Typography variant="h4">
-                  {stats.total_hosts}
+                  {summary ? summary.total_hosts : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -135,7 +140,7 @@ const Dashboard: React.FC = () => {
                   Software
                 </Typography>
                 <Typography variant="h4">
-                  {stats.total_software.toLocaleString()}
+                  {summary ? summary.total_software.toLocaleString() : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -153,7 +158,7 @@ const Dashboard: React.FC = () => {
                   Vulnerabilities
                 </Typography>
                 <Typography variant="h4">
-                  {stats.total_vulnerabilities}
+                  {summary ? summary.total_vulnerabilities : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -171,7 +176,7 @@ const Dashboard: React.FC = () => {
                   Critical
                 </Typography>
                 <Typography variant="h4" color="error">
-                  {stats.critical_vulnerabilities}
+                  {summary ? summary.critical_vulnerabilities : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -185,36 +190,47 @@ const Dashboard: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             OS Distribution
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(stats.hosts_by_os).map(([os, count]) => (
-              <Box key={os} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2">{os}</Typography>
-                <Chip label={count} size="small" color="primary" variant="outlined" />
-              </Box>
-            ))}
-          </Box>
+          {summary ? (
+            <PieChart
+              series={[{
+                innerRadius: 60,
+                paddingAngle: 5,
+                cornerRadius: 4,
+                data: Object.entries(summary.hosts_by_os).map(([os, count]) => ({
+                  id: os,
+                  value: count,
+                  label: os,
+                }))
+              }]}
+              height={250}
+            />
+          ) : (
+            <Skeleton variant="rectangular" width={350} height={250} />
+          )}
         </Paper>
 
         <Paper sx={{ p: 3, flex: '1 1 400px' }}>
           <Typography variant="h6" gutterBottom>
             Vulnerabilities by Severity
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(stats.vulnerabilities_by_severity).map(([severity, count]) => (
-              <Box key={severity} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {getSeverityIcon(severity)}
-                  <Typography variant="body2">{severity}</Typography>
-                </Box>
-                <Chip 
-                  label={count} 
-                  size="small" 
-                  color={getSeverityColor(severity) as any}
-                  variant="outlined" 
-                />
-              </Box>
-            ))}
-          </Box>
+          {vulnStats ? (
+            <PieChart
+              series={[{
+                innerRadius: 60,
+                paddingAngle: 5,
+                cornerRadius: 4,
+                data: Object.entries(vulnStats.vulnerabilities_by_severity).map(([severity, count]) => ({
+                  id: severity,
+                  value: count,
+                  label: severity,
+                  color: getSeverityColorHex(severity),
+                }))
+              }]}
+              height={250}
+            />
+          ) : (
+            <Skeleton variant="rectangular" width={350} height={250} />
+          )}
         </Paper>
       </Box>
 
@@ -224,42 +240,48 @@ const Dashboard: React.FC = () => {
           Recent Vulnerabilities
         </Typography>
         <List>
-          {stats.recent_vulnerabilities.map((vuln) => (
-            <ListItem key={vuln.cve_id} divider>
-              <ListItemIcon>
-                {getSeverityIcon(vuln.severity)}
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                    <Typography variant="subtitle1" component="span">
-                      {vuln.cve_id}
-                    </Typography>
-                    <Chip
-                      label={vuln.severity}
-                      color={getSeverityColor(vuln.severity) as any}
-                      size="small"
-                    />
-                    <Chip
-                      label={`CVSS ${vuln.cvss_score}`}
-                      variant="outlined"
-                      size="small"
-                    />
-                  </Box>
-                }
-                secondary={
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {vuln.description}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Published on {new Date(vuln.published_date).toLocaleDateString('en-US')}
-                    </Typography>
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
+          {vulnStats
+            ? vulnStats.recent_vulnerabilities.map((vuln) => (
+                <ListItem key={vuln.cve_id} divider>
+                  <ListItemIcon>{getSeverityIcon(vuln.severity)}</ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                        <Typography variant="subtitle1" component="span">
+                          {vuln.cve_id}
+                        </Typography>
+                        <Chip
+                          label={vuln.severity}
+                          color={getSeverityColor(vuln.severity) as any}
+                          size="small"
+                        />
+                        <Chip label={`CVSS ${vuln.cvss_score}`} variant="outlined" size="small" />
+                      </Box>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {vuln.description}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Published on {new Date(vuln.published_date).toLocaleDateString('en-US')}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ))
+            : [...Array(3)].map((_, idx) => (
+                <ListItem key={idx} divider>
+                  <ListItemIcon>
+                    <Skeleton variant="circular" width={24} height={24} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={<Skeleton width="60%" />}
+                    secondary={<Skeleton width="80%" />}
+                  />
+                </ListItem>
+              ))}
         </List>
       </Paper>
     </Box>

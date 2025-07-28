@@ -166,12 +166,15 @@ export interface SoftwareSummary {
   vulnerability_count: number;
 }
 
-export interface DashboardStats {
+export interface DashboardSummary {
   total_hosts: number;
   total_software: number;
   total_vulnerabilities: number;
   critical_vulnerabilities: number;
   hosts_by_os: { [key: string]: number };
+}
+
+export interface VulnerabilityStats {
   vulnerabilities_by_severity: { [key: string]: number };
   recent_vulnerabilities: Vulnerability[];
 }
@@ -273,8 +276,12 @@ export const inventoryAPI = {
 
 // Dashboard
 export const dashboardAPI = {
-  getStats: async (): Promise<DashboardStats> => {
-    const response = await apiClient.get<DashboardStats>('/api/v1/dashboard/stats');
+  getSummary: async (): Promise<DashboardSummary> => {
+    const response = await apiClient.get<DashboardSummary>('/api/v1/dashboard/summary');
+    return response.data;
+  },
+  getVulnerabilityStats: async (): Promise<VulnerabilityStats> => {
+    const response = await apiClient.get<VulnerabilityStats>('/api/v1/dashboard/vulnerabilities');
     return response.data;
   },
 };
