@@ -26,7 +26,7 @@ def get_dashboard_stats(
             "aggs": {
                 "os_distribution": {
                     "terms": {
-                        "field": "os.name.keyword",
+                        "field": "os.name",
                         "size": 10
                     }
                 }
