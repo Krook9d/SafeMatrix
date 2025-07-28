@@ -51,7 +51,7 @@ def get_dashboard_stats(
                 },
                 "unique_hosts": {
                     "cardinality": {
-                        "field": "host_id.keyword"
+                        "field": "host_id"
                     }
                 }
             }
@@ -73,7 +73,7 @@ def get_dashboard_stats(
             "aggs": {
                 "total_vulnerabilities": {
                     "value_count": {
-                        "field": "id.keyword"
+                        "field": "id"
                     }
                 },
                 "severity_distribution": {

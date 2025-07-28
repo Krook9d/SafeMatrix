@@ -27,7 +27,10 @@ def create_indexes():
     
     hosts_mapping = {
         "properties": {
-            "hostname": {"type": "text"},
+            "hostname": {
+                "type": "text",
+                "fields": {"keyword": {"type": "keyword"}}
+            },
             "ip_address": {"type": "ip"},
             "mac_address": {"type": "keyword"},
             "os": {
@@ -44,7 +47,10 @@ def create_indexes():
     inventories_mapping = {
         "properties": {
             "host_id": {"type": "keyword"},
-            "software_name": {"type": "text"},
+            "software_name": {
+                "type": "text",
+                "fields": {"keyword": {"type": "keyword"}}
+            },
             "version": {"type": "keyword"},
             "install_date": {"type": "date"},
             "vulnerabilities": {
@@ -62,7 +68,7 @@ def create_indexes():
     
     vulnerabilities_mapping = {
         "properties": {
-            "id": {"type": "keyword"}, # CVE-2021-12345
+            "id": {"type": "keyword"},  # CVE-2021-12345
             "sourceIdentifier": {"type": "keyword"},
             "published": {"type": "date"},
             "lastModified": {"type": "date"},
@@ -74,10 +80,13 @@ def create_indexes():
                     "value": {"type": "text"}
                 }
             },
-            "metrics": {"type": "object"}, # Can be complex, storing as generic object
+            "metrics": {"type": "object"},  # Can be complex, storing as generic object
             "weaknesses": {"type": "object"},
             "configurations": {"type": "object"},
-            "references": {"type": "object"}
+            "references": {"type": "object"},
+            # Computed fields for easier aggregations
+            "severity": {"type": "keyword"},
+            "cvss_score": {"type": "float"}
         }
     }
 
