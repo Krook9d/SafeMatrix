@@ -279,6 +279,14 @@ export const dashboardAPI = {
   },
 };
 
+// OpenSearch generic DSL query
+export const opensearchAPI = {
+  query: async (index: string, query: any): Promise<any> => {
+    const response = await apiClient.post(`/api/v1/opensearch/query?index=${encodeURIComponent(index)}`, query);
+    return response.data;
+  },
+};
+
 // Fonction utilitaire pour vérifier si l'utilisateur est connecté
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('access_token');

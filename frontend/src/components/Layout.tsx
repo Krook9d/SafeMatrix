@@ -27,6 +27,7 @@ import {
   AccountCircle,
   Logout,
   Inventory2,
+  Code,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,6 +45,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Hosts', icon: <Computer />, path: '/hosts' },
   { text: 'Vulnerabilities', icon: <Security />, path: '/vulnerabilities' },
   { text: 'Inventory', icon: <Inventory2 />, path: '/inventory' },
+  { text: 'DSL Query', icon: <Code />, path: '/dsl-query' },
 ];
 
 const Layout: React.FC = () => {
