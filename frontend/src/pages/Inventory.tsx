@@ -39,6 +39,7 @@ const InventoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [expandedSoftware, setExpandedSoftware] = useState<string | null>(null);
   const [softwareDetails, setSoftwareDetails] = useState<Inventory[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -165,20 +166,23 @@ const InventoryPage: React.FC = () => {
         bgcolor: 'background.paper',
         boxShadow: 1
       }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search software by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box display="flex" gap={2}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search software by name..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button variant="contained" onClick={() => setSearchTerm(searchInput)}>Search</Button>
+        </Box>
       </Paper>
 
       <TableContainer component={Paper}>

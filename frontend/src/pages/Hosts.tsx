@@ -43,6 +43,7 @@ const Hosts: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [osFilter, setOsFilter] = useState('');
   const [lastSeenFilter, setLastSeenFilter] = useState('');
   const navigate = useNavigate();
@@ -103,6 +104,7 @@ const Hosts: React.FC = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
+    setSearchInput('');
     setOsFilter('');
     setLastSeenFilter('');
   };
@@ -226,21 +228,24 @@ const Hosts: React.FC = () => {
       }}>
         <CardContent>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-            <TextField
-              sx={{ minWidth: 300 }}
-              variant="outlined"
-              placeholder="Search by name, IP or OS..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-              size="small"
-            />
+            <Box display="flex" gap={2} alignItems="center">
+              <TextField
+                sx={{ minWidth: 300 }}
+                variant="outlined"
+                placeholder="Search by name, IP or OS..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+                size="small"
+              />
+              <Button variant="contained" size="small" onClick={() => setSearchTerm(searchInput)}>Search</Button>
+            </Box>
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Operating System</InputLabel>
               <Select
@@ -271,6 +276,7 @@ const Hosts: React.FC = () => {
               variant="outlined"
               startIcon={<Clear />}
               onClick={clearFilters}
+              disabled={!searchTerm && !searchInput && !osFilter && !lastSeenFilter}
               size="small"
             >
               Clear Filters
