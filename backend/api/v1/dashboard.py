@@ -56,6 +56,34 @@ def get_dashboard_stats(
         body={
             "size": 10,  # Get recent vulnerabilities
             "track_total_hits": True,
+            "runtime_mappings": {
+                "computed_severity": {
+                    "type": "keyword",
+                    "script": {
+                        "source": """
+                            String sev = null;
+                            if (params._source.containsKey('severity') && params._source.severity != null) {
+                                sev = params._source.severity;
+                            } else if (params._source.containsKey('metrics')) {
+                                def m = params._source.metrics;
+                                if (m.containsKey('cvssMetricV31')) {
+                                    sev = m.cvssMetricV31[0].cvssData.baseSeverity;
+                                } else if (m.containsKey('cvssMetricV30')) {
+                                    sev = m.cvssMetricV30[0].cvssData.baseSeverity;
+                                } else if (m.containsKey('cvssMetricV2')) {
+                                    double score = m.cvssMetricV2[0].cvssData.baseScore;
+                                    if (score >= 9) sev = 'CRITICAL';
+                                    else if (score >= 7) sev = 'HIGH';
+                                    else if (score >= 4) sev = 'MEDIUM';
+                                    else sev = 'LOW';
+                                }
+                            }
+                            if (sev == null) sev = 'UNKNOWN';
+                            emit(sev);
+                        """
+                    }
+                }
+            },
             "sort": [
                 {
                     "published": {
@@ -66,14 +94,14 @@ def get_dashboard_stats(
             "aggs": {
                 "severity_distribution": {
                     "terms": {
-                        "field": "severity.keyword",
+                        "field": "computed_severity",
                         "size": 5
                     }
                 },
                 "critical_vulnerabilities": {
                     "filter": {
                         "term": {
-                            "severity.keyword": "CRITICAL"
+                            "computed_severity": "CRITICAL"
                         }
                     }
                 }
@@ -100,11 +128,39 @@ def get_dashboard_stats(
     hits = vulnerabilities_response.get("hits", {}).get("hits", [])
     for hit in hits:
         vuln = hit.get("_source", {})
+        metrics = vuln.get("metrics", {})
+        cvss_score = vuln.get("cvss_score")
+        severity = vuln.get("severity")
+        if severity is None or cvss_score is None:
+            if metrics.get("cvssMetricV31"):
+                data = metrics["cvssMetricV31"][0].get("cvssData", {})
+                cvss_score = cvss_score or data.get("baseScore")
+                severity = severity or data.get("baseSeverity")
+            elif metrics.get("cvssMetricV30"):
+                data = metrics["cvssMetricV30"][0].get("cvssData", {})
+                cvss_score = cvss_score or data.get("baseScore")
+                severity = severity or data.get("baseSeverity")
+            elif metrics.get("cvssMetricV2"):
+                data = metrics["cvssMetricV2"][0].get("cvssData", {})
+                cvss_score = cvss_score or data.get("baseScore")
+                if severity is None and cvss_score is not None:
+                    if cvss_score >= 9:
+                        severity = "CRITICAL"
+                    elif cvss_score >= 7:
+                        severity = "HIGH"
+                    elif cvss_score >= 4:
+                        severity = "MEDIUM"
+                    else:
+                        severity = "LOW"
+            if severity is None:
+                severity = "UNKNOWN"
+        if cvss_score is None:
+            cvss_score = 0.0
         recent_vulnerabilities.append({
             "cve_id": vuln.get("id", ""),
             "description": vuln.get("descriptions", [{}])[0].get("value", "") if vuln.get("descriptions") else "",
-            "cvss_score": vuln.get("cvss_score", 0.0),
-            "severity": vuln.get("severity", "UNKNOWN"),
+            "cvss_score": cvss_score,
+            "severity": severity,
             "published_date": vuln.get("published", ""),
             "reference_urls": vuln.get("reference_urls", [])
         })
