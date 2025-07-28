@@ -114,6 +114,12 @@ docker compose up --build frontend
 ```
 The frontend will be accessible at `http://localhost:5173`.
 
+**c. Build for production**
+```bash
+npm run build
+```
+
+---
 
 ### Frontend Development
 

@@ -178,7 +178,7 @@ export interface DashboardStats {
 
 // Services API
 
-// Authentification
+// Authentication
 export const authAPI = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const formData = new FormData();
