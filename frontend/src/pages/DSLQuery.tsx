@@ -4,11 +4,8 @@ import { opensearchAPI } from '../services/api';
 
 const DSLQuery: React.FC = () => {
   const [index, setIndex] = useState('');
-  const [queryText, setQueryText] = useState('{
-  "query": {
-    "match_all": {}
-  }
-}');
+  const defaultQuery = JSON.stringify({ query: { match_all: {} } }, null, 2);
+  const [queryText, setQueryText] = useState(defaultQuery);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
