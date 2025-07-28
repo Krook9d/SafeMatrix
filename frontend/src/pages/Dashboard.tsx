@@ -14,6 +14,7 @@ import {
   Paper,
   Avatar,
 } from '@mui/material';
+import { PieChart } from '@mui/x-charts/PieChart';
 import {
   Computer,
   Security,
@@ -185,36 +186,34 @@ const Dashboard: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             OS Distribution
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(stats.hosts_by_os).map(([os, count]) => (
-              <Box key={os} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2">{os}</Typography>
-                <Chip label={count} size="small" color="primary" variant="outlined" />
-              </Box>
-            ))}
-          </Box>
+          <PieChart
+            series={[{
+              data: Object.entries(stats.hosts_by_os).map(([os, count]) => ({
+                id: os,
+                value: count,
+                label: os,
+              }))
+            }]}
+            width={350}
+            height={250}
+          />
         </Paper>
 
         <Paper sx={{ p: 3, flex: '1 1 400px' }}>
           <Typography variant="h6" gutterBottom>
             Vulnerabilities by Severity
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(stats.vulnerabilities_by_severity).map(([severity, count]) => (
-              <Box key={severity} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {getSeverityIcon(severity)}
-                  <Typography variant="body2">{severity}</Typography>
-                </Box>
-                <Chip 
-                  label={count} 
-                  size="small" 
-                  color={getSeverityColor(severity) as any}
-                  variant="outlined" 
-                />
-              </Box>
-            ))}
-          </Box>
+          <PieChart
+            series={[{
+              data: Object.entries(stats.vulnerabilities_by_severity).map(([severity, count]) => ({
+                id: severity,
+                value: count,
+                label: severity,
+              }))
+            }]}
+            width={350}
+            height={250}
+          />
         </Paper>
       </Box>
 
