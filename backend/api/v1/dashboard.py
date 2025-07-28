@@ -56,34 +56,6 @@ def get_dashboard_stats(
         body={
             "size": 10,  # Get recent vulnerabilities
             "track_total_hits": True,
-            "runtime_mappings": {
-                "computed_severity": {
-                    "type": "keyword",
-                    "script": {
-                        "source": """
-                            String sev = null;
-                            if (params._source.containsKey('severity') && params._source.severity != null) {
-                                sev = params._source.severity;
-                            } else if (params._source.containsKey('metrics')) {
-                                def m = params._source.metrics;
-                                if (m.containsKey('cvssMetricV31')) {
-                                    sev = m.cvssMetricV31[0].cvssData.baseSeverity;
-                                } else if (m.containsKey('cvssMetricV30')) {
-                                    sev = m.cvssMetricV30[0].cvssData.baseSeverity;
-                                } else if (m.containsKey('cvssMetricV2')) {
-                                    double score = m.cvssMetricV2[0].cvssData.baseScore;
-                                    if (score >= 9) sev = 'CRITICAL';
-                                    else if (score >= 7) sev = 'HIGH';
-                                    else if (score >= 4) sev = 'MEDIUM';
-                                    else sev = 'LOW';
-                                }
-                            }
-                            if (sev == null) sev = 'UNKNOWN';
-                            emit(sev);
-                        """
-                    }
-                }
-            },
             "sort": [
                 {
                     "published": {
@@ -94,14 +66,30 @@ def get_dashboard_stats(
             "aggs": {
                 "severity_distribution": {
                     "terms": {
-                        "field": "computed_severity",
-                        "size": 5
-                    }
-                },
-                "critical_vulnerabilities": {
-                    "filter": {
-                        "term": {
-                            "computed_severity": "CRITICAL"
+                        "size": 5,
+                        "script": {
+                            "lang": "painless",
+                            "source": """
+                                def sev = null;
+                                if (doc.containsKey('severity') && !doc['severity'].empty) {
+                                    sev = doc['severity'].value;
+                                } else if (params._source.containsKey('metrics')) {
+                                    def m = params._source.metrics;
+                                    if (m.containsKey('cvssMetricV31')) {
+                                        sev = m.cvssMetricV31[0].cvssData.baseSeverity;
+                                    } else if (m.containsKey('cvssMetricV30')) {
+                                        sev = m.cvssMetricV30[0].cvssData.baseSeverity;
+                                    } else if (m.containsKey('cvssMetricV2')) {
+                                        double score = m.cvssMetricV2[0].cvssData.baseScore;
+                                        if (score >= 9) sev = 'CRITICAL';
+                                        else if (score >= 7) sev = 'HIGH';
+                                        else if (score >= 4) sev = 'MEDIUM';
+                                        else sev = 'LOW';
+                                    }
+                                }
+                                if (sev == null) sev = 'UNKNOWN';
+                                return sev;
+                            """
                         }
                     }
                 }
@@ -113,7 +101,6 @@ def get_dashboard_stats(
     total_hosts = hosts_response.get("hits", {}).get("total", {}).get("value", 0)
     total_software = inventories_response.get("hits", {}).get("total", {}).get("value", 0)
     total_vulnerabilities = vulnerabilities_response.get("hits", {}).get("total", {}).get("value", 0)
-    critical_vulnerabilities = vulnerabilities_response.get("aggregations", {}).get("critical_vulnerabilities", {}).get("doc_count", 0)
     
     # OS distribution
     os_buckets = hosts_response.get("aggregations", {}).get("os_distribution", {}).get("buckets", [])
@@ -122,6 +109,7 @@ def get_dashboard_stats(
     # Severity distribution
     severity_buckets = vulnerabilities_response.get("aggregations", {}).get("severity_distribution", {}).get("buckets", [])
     vulnerabilities_by_severity = {bucket["key"]: bucket["doc_count"] for bucket in severity_buckets}
+    critical_vulnerabilities = next((b["doc_count"] for b in severity_buckets if b["key"] == "CRITICAL"), 0)
     
     # Recent vulnerabilities
     recent_vulnerabilities = []
