@@ -12,6 +12,7 @@ import HostDetail from './pages/HostDetail';
 import Vulnerabilities from './pages/Vulnerabilities';
 import VulnerabilityDetail from './pages/VulnerabilityDetail';
 import Inventory from './pages/Inventory';
+import DSLQuery from './pages/DSLQuery';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -235,6 +236,7 @@ const App: React.FC = () => {
               <Route path="vulnerabilities" element={<Vulnerabilities />} />
               <Route path="vulnerabilities/:cveId" element={<VulnerabilityDetail />} />
               <Route path="inventory" element={<Inventory />} />
+              <Route path="dsl-query" element={<DSLQuery />} />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

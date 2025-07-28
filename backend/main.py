@@ -12,6 +12,7 @@ from .api.v1 import inventories as inventories_router
 from .api.v1 import vulnerabilities as vulnerabilities_router
 from .api.v1 import agents as agents_router
 from .api.v1 import dashboard as dashboard_router
+from .api.v1 import opensearch as opensearch_router
 
 user.Base.metadata.create_all(bind=engine)
 create_indexes()
@@ -42,6 +43,7 @@ app.include_router(inventories_router.router, prefix="/api/v1", tags=["inventori
 app.include_router(vulnerabilities_router.router, prefix="/api/v1/vulnerabilities", tags=["vulnerabilities"])
 app.include_router(agents_router.router, prefix="/api/v1", tags=["agents"])
 app.include_router(dashboard_router.router, prefix="/api/v1", tags=["dashboard"])
+app.include_router(opensearch_router.router, prefix="/api/v1/opensearch", tags=["opensearch"])
 
 @app.get("/")
 def read_root():
