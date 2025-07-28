@@ -108,28 +108,10 @@ uvicorn backend.main:app --reload
 The API will then be accessible at `http://127.0.0.1:8000`.
 
 #### 3. Launch Frontend (React)
-Navigate to the `frontend/` folder and follow these steps:
-
-**a. Install dependencies**
-
-Install npm : https://nodejs.org/en/download
 
 ```bash
-npm install
+docker compose up --build frontend
 ```
-
-**b. Launch the development server**
-```bash
-npm run dev
-```
-The frontend will be accessible at `http://localhost:5173`.
-
-**c. Build for production**
-```bash
-npm run build
-```
-
----
 
 ### Frontend Development
 
