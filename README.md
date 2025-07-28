@@ -112,6 +112,7 @@ The API will then be accessible at `http://127.0.0.1:8000`.
 ```bash
 docker compose up --build frontend
 ```
+The frontend will be accessible at `http://localhost:5173`.
 
 ### Frontend Development
 
