@@ -176,6 +176,19 @@ export interface DashboardStats {
   recent_vulnerabilities: Vulnerability[];
 }
 
+export interface DashboardBaseStats {
+  total_hosts: number;
+  total_software: number;
+  hosts_by_os: { [key: string]: number };
+}
+
+export interface DashboardVulnStats {
+  total_vulnerabilities: number;
+  critical_vulnerabilities: number;
+  vulnerabilities_by_severity: { [key: string]: number };
+  recent_vulnerabilities: Vulnerability[];
+}
+
 // Services API
 
 // Authentication
@@ -275,6 +288,16 @@ export const inventoryAPI = {
 export const dashboardAPI = {
   getStats: async (): Promise<DashboardStats> => {
     const response = await apiClient.get<DashboardStats>('/api/v1/dashboard/stats');
+    return response.data;
+  },
+
+  getBaseStats: async (): Promise<DashboardBaseStats> => {
+    const response = await apiClient.get<DashboardBaseStats>('/api/v1/dashboard/stats?include_vuln=false');
+    return response.data;
+  },
+
+  getVulnerabilityStats: async (): Promise<DashboardVulnStats> => {
+    const response = await apiClient.get<DashboardVulnStats>('/api/v1/dashboard/vulnerability-stats');
     return response.data;
   },
 };

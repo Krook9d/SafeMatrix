@@ -23,28 +23,35 @@ import {
   BugReport,
   TrendingUp,
 } from '@mui/icons-material';
-import type { DashboardStats } from '../services/api';
+import type { DashboardStats, DashboardBaseStats, DashboardVulnStats } from '../services/api';
 import { dashboardAPI } from '../services/api';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<Partial<DashboardStats>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
-        const data = await dashboardAPI.getStats();
-        setStats(data);
+        const base = await dashboardAPI.getBaseStats();
+        setStats((prev) => ({ ...prev, ...base }));
       } catch (err: any) {
-        console.error('Dashboard error:', err);
+        console.error('Dashboard base error:', err);
         setError('Error loading dashboard data');
       } finally {
         setLoading(false);
       }
+
+      try {
+        const vuln = await dashboardAPI.getVulnerabilityStats();
+        setStats((prev) => ({ ...prev, ...vuln }));
+      } catch (err: any) {
+        console.error('Dashboard vuln error:', err);
+      }
     };
 
-    fetchDashboardData();
+    fetchData();
   }, []);
 
   const getSeverityColor = (severity: string) => {
@@ -107,7 +114,7 @@ const Dashboard: React.FC = () => {
                   Total Hosts
                 </Typography>
                 <Typography variant="h4">
-                  {stats ? stats.total_hosts : <Skeleton width={40} />}
+                  {stats.total_hosts !== undefined ? stats.total_hosts : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -125,7 +132,7 @@ const Dashboard: React.FC = () => {
                   Software
                 </Typography>
                 <Typography variant="h4">
-                  {stats ? stats.total_software.toLocaleString() : <Skeleton width={40} />}
+                  {stats.total_software !== undefined ? stats.total_software.toLocaleString() : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -143,7 +150,7 @@ const Dashboard: React.FC = () => {
                   Vulnerabilities
                 </Typography>
                 <Typography variant="h4">
-                  {stats ? stats.total_vulnerabilities : <Skeleton width={40} />}
+                  {stats.total_vulnerabilities !== undefined ? stats.total_vulnerabilities : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -161,7 +168,7 @@ const Dashboard: React.FC = () => {
                   Critical
                 </Typography>
                 <Typography variant="h4" color="error">
-                  {stats ? stats.critical_vulnerabilities : <Skeleton width={40} />}
+                  {stats.critical_vulnerabilities !== undefined ? stats.critical_vulnerabilities : <Skeleton width={40} />}
                 </Typography>
               </Box>
             </Box>
@@ -175,7 +182,7 @@ const Dashboard: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             OS Distribution
           </Typography>
-          {stats ? (
+          {stats.hosts_by_os ? (
             <PieChart
               series={[{
                 innerRadius: 60,
@@ -198,7 +205,7 @@ const Dashboard: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Vulnerabilities by Severity
           </Typography>
-          {stats ? (
+          {stats.vulnerabilities_by_severity ? (
             <PieChart
               series={[{
                 innerRadius: 60,
@@ -225,7 +232,7 @@ const Dashboard: React.FC = () => {
           Recent Vulnerabilities
         </Typography>
         <List>
-          {stats
+          {stats.recent_vulnerabilities
             ? stats.recent_vulnerabilities.map((vuln) => (
                 <ListItem key={vuln.cve_id} divider>
                   <ListItemIcon>{getSeverityIcon(vuln.severity)}</ListItemIcon>

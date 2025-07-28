@@ -12,6 +12,7 @@ client = OpenSearch(
     verify_certs=False,
     ssl_assert_hostname=False,
     ssl_show_warn=False,
+    maxsize=25,
 )
 
 INDEX_HOSTS = "hosts"
@@ -24,19 +25,16 @@ def create_indexes():
     Creates the OpenSearch indexes if they don't already exist.
     """
     logging.basicConfig(level=logging.INFO)
-    
+
     hosts_mapping = {
         "properties": {
-            "hostname": {
-                "type": "text",
-                "fields": {"keyword": {"type": "keyword"}}
-            },
+            "hostname": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "ip_address": {"type": "ip"},
             "mac_address": {"type": "keyword"},
             "os": {
                 "properties": {
                     "name": {"type": "keyword"},
-                    "version": {"type": "keyword"}
+                    "version": {"type": "keyword"},
                 }
             },
             "created_at": {"type": "date"},
@@ -49,7 +47,7 @@ def create_indexes():
             "host_id": {"type": "keyword"},
             "software_name": {
                 "type": "text",
-                "fields": {"keyword": {"type": "keyword"}}
+                "fields": {"keyword": {"type": "keyword"}},
             },
             "version": {"type": "keyword"},
             "install_date": {"type": "date"},
@@ -59,13 +57,13 @@ def create_indexes():
                     "cve_id": {"type": "keyword"},
                     "description": {"type": "text"},
                     "score": {"type": "float"},
-                    "url": {"type": "keyword"}
-                }
+                    "url": {"type": "keyword"},
+                },
             },
             "created_at": {"type": "date"},
         }
     }
-    
+
     vulnerabilities_mapping = {
         "properties": {
             "id": {"type": "keyword"},  # CVE-2021-12345
@@ -75,10 +73,7 @@ def create_indexes():
             "vulnStatus": {"type": "keyword"},
             "descriptions": {
                 "type": "nested",
-                "properties": {
-                    "lang": {"type": "keyword"},
-                    "value": {"type": "text"}
-                }
+                "properties": {"lang": {"type": "keyword"}, "value": {"type": "text"}},
             },
             "metrics": {"type": "object"},  # Can be complex, storing as generic object
             "weaknesses": {"type": "object"},
@@ -86,7 +81,7 @@ def create_indexes():
             "references": {"type": "object"},
             # Computed fields for easier aggregations
             "severity": {"type": "keyword"},
-            "cvss_score": {"type": "float"}
+            "cvss_score": {"type": "float"},
         }
     }
 
@@ -100,10 +95,7 @@ def create_indexes():
         if not client.indices.exists(index=index_name):
             logging.info(f"Index '{index_name}' not found. Creating...")
             try:
-                client.indices.create(
-                    index=index_name,
-                    body={"mappings": mapping}
-                )
+                client.indices.create(index=index_name, body={"mappings": mapping})
                 logging.info(f"Index '{index_name}' created successfully.")
             except RequestError as e:
                 logging.error(f"Error creating index '{index_name}': {e}")
@@ -112,4 +104,4 @@ def create_indexes():
 
 
 def get_opensearch_client():
-    return client 
+    return client
