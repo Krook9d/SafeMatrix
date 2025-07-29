@@ -31,7 +31,9 @@ def get_dashboard_stats(
                     }
                 }
             }
-        }
+        },
+        params={"request_cache": True},
+        request_timeout=20,
     )
     
     # Get total software count and host-software relationships
@@ -47,110 +49,111 @@ def get_dashboard_stats(
                     }
                 }
             }
-        }
+        },
+        params={"request_cache": True},
+        request_timeout=20,
     )
     
-    # Get vulnerabilities statistics
-    vulnerabilities_response = client.search(
+    # ------------------------------------------------------------------
+    # Vulnerabilities statistics
+    # ------------------------------------------------------------------
+
+    # Total vulnerabilities via _count
+    total_vuln_response = client.count(
         index=INDEX_VULNERABILITIES,
-        body={
-            "size": 10,  # Get recent vulnerabilities
-            "track_total_hits": True,
-            "sort": [
-                {
-                    "published": {
-                        "order": "desc"
-                    }
-                }
-            ],
-            "aggs": {
-                "severity_distribution": {
-                    "terms": {
-                        "size": 5,
-                        "script": {
-                            "lang": "painless",
-                            "source": """
-                                def sev = null;
-                                if (doc.containsKey('severity') && !doc['severity'].empty) {
-                                    sev = doc['severity'].value;
-                                } else if (params._source.containsKey('metrics')) {
-                                    def m = params._source.metrics;
-                                    if (m.containsKey('cvssMetricV31')) {
-                                        sev = m.cvssMetricV31[0].cvssData.baseSeverity;
-                                    } else if (m.containsKey('cvssMetricV30')) {
-                                        sev = m.cvssMetricV30[0].cvssData.baseSeverity;
-                                    } else if (m.containsKey('cvssMetricV2')) {
-                                        double score = m.cvssMetricV2[0].cvssData.baseScore;
-                                        if (score >= 9) sev = 'CRITICAL';
-                                        else if (score >= 7) sev = 'HIGH';
-                                        else if (score >= 4) sev = 'MEDIUM';
-                                        else sev = 'LOW';
-                                    }
-                                }
-                                if (sev == null) sev = 'UNKNOWN';
-                                return sev;
-                            """
-                        }
+        body={"query": {"match_all": {}}},
+        params={"request_cache": True},
+        request_timeout=20,
+    )
+
+    # Critical vulnerabilities via _count
+    critical_vuln_response = client.count(
+        index=INDEX_VULNERABILITIES,
+        body={"query": {"term": {"severity": "CRITICAL"}}},
+        params={"request_cache": True},
+        request_timeout=20,
+    )
+
+    # Distribution by severity via filters aggregation
+    sev_agg_body = {
+        "size": 0,
+        "track_total_hits": False,
+        "stored_fields": [],
+        "timeout": "20s",
+        "aggs": {
+            "by_sev": {
+                "filters": {
+                    "filters": {
+                        "CRITICAL": {"term": {"severity": "CRITICAL"}},
+                        "HIGH": {"term": {"severity": "HIGH"}},
+                        "MEDIUM": {"term": {"severity": "MEDIUM"}},
+                        "LOW": {"term": {"severity": "LOW"}},
+                        "NONE": {"term": {"severity": "NONE"}},
                     }
                 }
             }
-        }
+        },
+    }
+    sev_agg_response = client.search(
+        index=INDEX_VULNERABILITIES,
+        body=sev_agg_body,
+        params={"request_cache": True},
+        request_timeout=30,
+    )
+
+    # Recent vulnerabilities (minimal _source)
+    recent_body = {
+        "size": 10,
+        "sort": [{"published": {"order": "desc"}}],
+        "_source": [
+            "id",
+            "severity",
+            "cvss_score",
+            "descriptions.value",
+            "descriptions.lang",
+            "published",
+        ],
+    }
+    recent_response = client.search(
+        index=INDEX_VULNERABILITIES,
+        body=recent_body,
+        params={"request_cache": True},
+        request_timeout=20,
     )
     
     # Extract data from responses
     total_hosts = hosts_response.get("hits", {}).get("total", {}).get("value", 0)
     total_software = inventories_response.get("hits", {}).get("total", {}).get("value", 0)
-    total_vulnerabilities = vulnerabilities_response.get("hits", {}).get("total", {}).get("value", 0)
-    
+    total_vulnerabilities = total_vuln_response.get("count", 0)
+    critical_vulnerabilities = critical_vuln_response.get("count", 0)
+
     # OS distribution
     os_buckets = hosts_response.get("aggregations", {}).get("os_distribution", {}).get("buckets", [])
     hosts_by_os = {bucket["key"]: bucket["doc_count"] for bucket in os_buckets}
-    
+
     # Severity distribution
-    severity_buckets = vulnerabilities_response.get("aggregations", {}).get("severity_distribution", {}).get("buckets", [])
-    vulnerabilities_by_severity = {bucket["key"]: bucket["doc_count"] for bucket in severity_buckets}
-    critical_vulnerabilities = next((b["doc_count"] for b in severity_buckets if b["key"] == "CRITICAL"), 0)
-    
+    sev_buckets = sev_agg_response.get("aggregations", {}).get("by_sev", {}).get("buckets", {})
+    vulnerabilities_by_severity = {k: v.get("doc_count", 0) for k, v in sev_buckets.items()}
+
     # Recent vulnerabilities
     recent_vulnerabilities = []
-    hits = vulnerabilities_response.get("hits", {}).get("hits", [])
+    hits = recent_response.get("hits", {}).get("hits", [])
     for hit in hits:
         vuln = hit.get("_source", {})
-        metrics = vuln.get("metrics", {})
-        cvss_score = vuln.get("cvss_score")
-        severity = vuln.get("severity")
-        if severity is None or cvss_score is None:
-            if metrics.get("cvssMetricV31"):
-                data = metrics["cvssMetricV31"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                severity = severity or data.get("baseSeverity")
-            elif metrics.get("cvssMetricV30"):
-                data = metrics["cvssMetricV30"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                severity = severity or data.get("baseSeverity")
-            elif metrics.get("cvssMetricV2"):
-                data = metrics["cvssMetricV2"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                if severity is None and cvss_score is not None:
-                    if cvss_score >= 9:
-                        severity = "CRITICAL"
-                    elif cvss_score >= 7:
-                        severity = "HIGH"
-                    elif cvss_score >= 4:
-                        severity = "MEDIUM"
-                    else:
-                        severity = "LOW"
-            if severity is None:
-                severity = "UNKNOWN"
-        if cvss_score is None:
-            cvss_score = 0.0
+        descriptions = vuln.get("descriptions", [])
+        desc = None
+        for d in descriptions:
+            if d.get("lang") == "en":
+                desc = d.get("value")
+                break
+        if desc is None and descriptions:
+            desc = descriptions[0].get("value")
         recent_vulnerabilities.append({
             "cve_id": vuln.get("id", ""),
-            "description": vuln.get("descriptions", [{}])[0].get("value", "") if vuln.get("descriptions") else "",
-            "cvss_score": cvss_score,
-            "severity": severity,
-            "published_date": vuln.get("published", ""),
-            "reference_urls": vuln.get("reference_urls", [])
+            "severity": vuln.get("severity") or "UNKNOWN",
+            "cvss_score": vuln.get("cvss_score"),
+            "description": desc or "",
+            "published_date": vuln.get("published"),
         })
     
     return {
