@@ -50,47 +50,27 @@ def get_dashboard_stats(
         }
     )
     
-    # Get vulnerabilities statistics
+    # Get vulnerabilities statistics - OPTIMIZED VERSION
     vulnerabilities_response = client.search(
         index=INDEX_VULNERABILITIES,
         body={
             "size": 10,  # Get recent vulnerabilities
+            "_source": ["id", "descriptions", "severity", "cvss_score", "published"],  # Limit fields returned
             "track_total_hits": True,
             "sort": [
                 {
                     "published": {
-                        "order": "desc"
+                        "order": "desc",
+                        "unmapped_type": "date"  # Handle missing field
                     }
                 }
             ],
             "aggs": {
                 "severity_distribution": {
                     "terms": {
-                        "size": 5,
-                        "script": {
-                            "lang": "painless",
-                            "source": """
-                                def sev = null;
-                                if (doc.containsKey('severity') && !doc['severity'].empty) {
-                                    sev = doc['severity'].value;
-                                } else if (params._source.containsKey('metrics')) {
-                                    def m = params._source.metrics;
-                                    if (m.containsKey('cvssMetricV31')) {
-                                        sev = m.cvssMetricV31[0].cvssData.baseSeverity;
-                                    } else if (m.containsKey('cvssMetricV30')) {
-                                        sev = m.cvssMetricV30[0].cvssData.baseSeverity;
-                                    } else if (m.containsKey('cvssMetricV2')) {
-                                        double score = m.cvssMetricV2[0].cvssData.baseScore;
-                                        if (score >= 9) sev = 'CRITICAL';
-                                        else if (score >= 7) sev = 'HIGH';
-                                        else if (score >= 4) sev = 'MEDIUM';
-                                        else sev = 'LOW';
-                                    }
-                                }
-                                if (sev == null) sev = 'UNKNOWN';
-                                return sev;
-                            """
-                        }
+                        "field": "severity.keyword",  # Use keyword subfield for aggregations - SUPER FAST!
+                        "size": 10,
+                        "missing": "UNKNOWN"  # Handle any missing values
                     }
                 }
             }
@@ -111,42 +91,27 @@ def get_dashboard_stats(
     vulnerabilities_by_severity = {bucket["key"]: bucket["doc_count"] for bucket in severity_buckets}
     critical_vulnerabilities = next((b["doc_count"] for b in severity_buckets if b["key"] == "CRITICAL"), 0)
     
-    # Recent vulnerabilities
+    # Recent vulnerabilities - ULTRA-OPTIMIZED VERSION (uses pre-calculated fields)
     recent_vulnerabilities = []
     hits = vulnerabilities_response.get("hits", {}).get("hits", [])
     for hit in hits:
         vuln = hit.get("_source", {})
-        metrics = vuln.get("metrics", {})
-        cvss_score = vuln.get("cvss_score")
-        severity = vuln.get("severity")
-        if severity is None or cvss_score is None:
-            if metrics.get("cvssMetricV31"):
-                data = metrics["cvssMetricV31"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                severity = severity or data.get("baseSeverity")
-            elif metrics.get("cvssMetricV30"):
-                data = metrics["cvssMetricV30"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                severity = severity or data.get("baseSeverity")
-            elif metrics.get("cvssMetricV2"):
-                data = metrics["cvssMetricV2"][0].get("cvssData", {})
-                cvss_score = cvss_score or data.get("baseScore")
-                if severity is None and cvss_score is not None:
-                    if cvss_score >= 9:
-                        severity = "CRITICAL"
-                    elif cvss_score >= 7:
-                        severity = "HIGH"
-                    elif cvss_score >= 4:
-                        severity = "MEDIUM"
-                    else:
-                        severity = "LOW"
-            if severity is None:
-                severity = "UNKNOWN"
-        if cvss_score is None:
-            cvss_score = 0.0
+        
+        # Use pre-calculated fields directly - LIGHTNING FAST!
+        cvss_score = vuln.get("cvss_score", 0.0)
+        severity = vuln.get("severity", "UNKNOWN")
+        
+        # Extract description efficiently
+        description = ""
+        descriptions = vuln.get("descriptions", [])
+        if descriptions:
+            # Find English description first, fallback to first available
+            eng_desc = next((d.get("value", "") for d in descriptions if d.get("lang") == "en"), None)
+            description = eng_desc or descriptions[0].get("value", "") if descriptions else ""
+        
         recent_vulnerabilities.append({
             "cve_id": vuln.get("id", ""),
-            "description": vuln.get("descriptions", [{}])[0].get("value", "") if vuln.get("descriptions") else "",
+            "description": description,
             "cvss_score": cvss_score,
             "severity": severity,
             "published_date": vuln.get("published", ""),
