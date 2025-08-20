@@ -178,6 +178,11 @@ export interface DashboardStats {
 
 // Services API
 
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+}
+
 // Authentication
 export const authAPI = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -194,6 +199,11 @@ export const authAPI = {
         },
       }
     );
+    return response.data;
+  },
+
+  register: async (userData: CreateUserRequest): Promise<User> => {
+    const response = await apiClient.post<User>('/api/v1/users/', userData);
     return response.data;
   },
 
