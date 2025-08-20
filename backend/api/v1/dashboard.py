@@ -68,7 +68,7 @@ def get_dashboard_stats(
             "aggs": {
                 "severity_distribution": {
                     "terms": {
-                        "field": "severity.keyword",  # Use keyword subfield for aggregations - SUPER FAST!
+                        "field": "severity",  # Use keyword field for aggregations - SUPER FAST!
                         "size": 10,
                         "missing": "UNKNOWN"  # Handle any missing values
                     }
