@@ -108,7 +108,12 @@ const Layout: React.FC = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      minHeight: '100vh',
+      width: '100%',
+      maxWidth: 'none'
+    }}>
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -210,13 +215,23 @@ const Layout: React.FC = () => {
         sx={{
           flexGrow: 1,
           p: 0,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: '100%',
+          maxWidth: 'none',
+          mx: 0,
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
         }}
       >
         <Toolbar />
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          width: '100%',
+          maxWidth: 'none',
+          minWidth: 0
+        }}>
           <Outlet />
         </Box>
       </Box>

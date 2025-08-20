@@ -1,0 +1,107 @@
+/* Hosts page custom styles */
+.hosts-container {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.03) 0%, rgba(156, 39, 176, 0.03) 100%);
+  min-height: calc(100vh - 64px);
+}
+
+.host-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: 12px !important;
+}
+
+.host-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15) !important;
+}
+
+.search-container-hosts {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(25, 118, 210, 0.1);
+}
+
+.hosts-table-container {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.hosts-table-row {
+  transition: all 0.2s ease-in-out;
+}
+
+.hosts-table-row:hover {
+  background: linear-gradient(90deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%) !important;
+  transform: translateX(4px);
+}
+
+.status-chip {
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+.filter-button-hosts {
+  border-radius: 12px !important;
+  transition: all 0.3s ease-in-out;
+}
+
+.filter-button-hosts:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.2);
+}
+
+.stats-card-hosts {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%);
+  border-radius: 16px !important;
+  border: 1px solid rgba(25, 118, 210, 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+.stats-card-hosts:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15);
+}
+
+.host-avatar {
+  transition: all 0.3s ease-in-out;
+}
+
+.host-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
+}
+
+.os-icon {
+  font-size: 24px;
+  transition: all 0.3s ease-in-out;
+}
+
+.os-icon:hover {
+  transform: scale(1.2);
+}
+
+/* Loading skeleton improvements */
+.skeleton-row-hosts {
+  border-radius: 12px !important;
+  margin-bottom: 8px;
+}
+
+/* Empty state styling */
+.empty-state-hosts {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.05) 0%, rgba(97, 97, 97, 0.05) 100%);
+  border-radius: 16px !important;
+  border: 2px dashed rgba(158, 158, 158, 0.3);
+}
+
+/* Action button styling */
+.action-button {
+  border-radius: 8px !important;
+  transition: all 0.3s ease-in-out;
+}
+
+.action-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}

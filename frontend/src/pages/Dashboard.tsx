@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
 
 
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', maxWidth: 'none' }}>
         <Grid item xs={12} sm={6} md={3}>
           <Grow in timeout={600}>
             <Card className="kpi-card" sx={{
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
       </Grid>
 
       {/* Charts Section */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', maxWidth: 'none' }}>
         <Grid item xs={12} lg={6}>
           <Fade in timeout={1400}>
             <Paper className="chart-container" sx={{
