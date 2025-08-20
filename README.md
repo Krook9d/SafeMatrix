@@ -64,10 +64,10 @@ Defines the **routes (endpoints)** of the API.
 
 To run the application, database services (PostgreSQL, OpenSearch) must first be launched via Docker. Then, the Python backend can be started.
 
-#### 1. Launch Services (Docker)
+#### 1. Launch Services (Docker) 
 From the **project root** (the folder containing `docker-compose.yml`), run:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 This will start PostgreSQL and OpenSearch in the background.
 
@@ -76,7 +76,7 @@ To stop them properly, use:
 docker-compose down
 ```
 
-#### 2. Launch Backend (Python)
+#### 2. Setup the env variable & Launch Backend (Python) 
 Once Docker services are started, follow these steps from the `backend/` folder root.
 
 **a. Create a virtual environment**
@@ -99,8 +99,12 @@ Make sure the virtual environment is activated, then run:
 ```bash
 pip install -r requirements.txt
 ```
+**d. Setup env variable **
 
-**d. Launch the development server**
+remove the ".exemple" of the .env name file
+set the variable you want
+
+**e. Launch the development server**
 This command starts the server, which will automatically reload on every code change.
 ```bash
 uvicorn backend.main:app --reload
