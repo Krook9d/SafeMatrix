@@ -1,6 +1,6 @@
 /* Vulnerabilities page custom styles */
 .vulnerabilities-container {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.03) 0%, rgba(156, 39, 176, 0.03) 100%);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
   min-height: calc(100vh - 64px);
 }
 
@@ -17,9 +17,10 @@
 
 .search-container {
   backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   border-radius: 16px !important;
-  border: 1px solid rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .vulnerability-table-container {
@@ -33,7 +34,7 @@
 }
 
 .vulnerability-table-row:hover {
-  background: linear-gradient(90deg, rgba(244, 67, 54, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%) !important;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.04) 0%, rgba(99, 102, 241, 0.04) 100%) !important;
   transform: translateX(4px);
 }
 
@@ -53,10 +54,11 @@
 }
 
 .stats-card {
-  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
   border-radius: 16px !important;
-  border: 1px solid rgba(25, 118, 210, 0.2);
+  border: 1px solid rgba(226, 232, 240, 0.6);
   transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .stats-card:hover {

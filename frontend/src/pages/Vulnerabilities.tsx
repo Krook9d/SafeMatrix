@@ -29,6 +29,7 @@ import {
   alpha,
   Fade,
   Grow,
+  Tooltip,
 } from '@mui/material';
 import {
   Search,
@@ -40,10 +41,12 @@ import {
   CheckCircle,
   Shield,
   TrendingUp,
+  Computer,
 } from '@mui/icons-material';
 import type { VulnerabilityCollection, Vulnerability } from '../services/api';
 import { vulnerabilitiesAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { getAffectedProductsSummary } from '../utils/cpeUtils';
 import './Vulnerabilities.css';
 
 const Vulnerabilities: React.FC = () => {
@@ -549,9 +552,10 @@ const Vulnerabilities: React.FC = () => {
         <TableContainer component={Paper} className="vulnerability-table-container">
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: alpha(theme.palette.error.main, 0.05) }}>
+              <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
                 <TableCell sx={{ fontWeight: 600 }}>CVE ID</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Affected Products</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>CVSS Score</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Published</TableCell>
@@ -608,11 +612,33 @@ const Vulnerabilities: React.FC = () => {
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            maxWidth: 400,
+                            maxWidth: 350,
                           }}
                         >
                           {description}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={getAffectedProductsSummary(vuln.configurations || [])}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Computer sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: 200,
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              {getAffectedProductsSummary(vuln.configurations || [])}
+                            </Typography>
+                          </Box>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
                         {baseScore ? (
