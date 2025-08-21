@@ -176,6 +176,129 @@ export interface DashboardStats {
   recent_vulnerabilities: Vulnerability[];
 }
 
+// Workflow Types
+export type WorkflowStatus = 'active' | 'inactive' | 'draft';
+export type ConnectorType = 'email' | 'thehive' | 'servicenow';
+export type ExecutionStatus = 'pending' | 'running' | 'success' | 'failed' | 'skipped';
+export type RuleOperator = 'equals' | 'not_equals' | 'greater_than' | 'greater_than_or_equal' | 
+                          'less_than' | 'less_than_or_equal' | 'contains' | 'not_contains' | 'in' | 'not_in';
+
+export interface RuleCondition {
+  field: string;
+  operator: RuleOperator;
+  value: string | number | string[];
+}
+
+export interface EmailAction {
+  connector_id: number;
+  to: string[];
+  cc?: string[];
+  subject: string;
+  body: string;
+}
+
+export interface TheHiveAction {
+  connector_id: number;
+  title: string;
+  description: string;
+  severity?: number;
+  tlp?: number;
+  tags?: string[];
+}
+
+export interface ServiceNowAction {
+  connector_id: number;
+  short_description: string;
+  description: string;
+  priority?: number;
+  category?: string;
+  assignment_group?: string;
+}
+
+export interface WorkflowAction {
+  type: string;
+  config: EmailAction | TheHiveAction | ServiceNowAction;
+}
+
+export interface Workflow {
+  id: number;
+  name: string;
+  description?: string;
+  status: WorkflowStatus;
+  rules: RuleCondition[];
+  rule_logic: string;
+  actions: WorkflowAction[];
+  enabled: boolean;
+  trigger_on_ingest: boolean;
+  trigger_on_schedule: boolean;
+  schedule_cron?: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by?: string;
+}
+
+export interface WorkflowCreate {
+  name: string;
+  description?: string;
+  status?: WorkflowStatus;
+  rules: RuleCondition[];
+  rule_logic?: string;
+  actions: WorkflowAction[];
+  enabled?: boolean;
+  trigger_on_ingest?: boolean;
+  trigger_on_schedule?: boolean;
+  schedule_cron?: string;
+}
+
+export interface WorkflowExecution {
+  id: number;
+  workflow_id: number;
+  trigger_type: string;
+  vulnerability_id?: string;
+  status: ExecutionStatus;
+  started_at: string;
+  completed_at?: string;
+  rules_matched: boolean;
+  actions_executed: number;
+  actions_failed: number;
+  execution_log?: any;
+  error_message?: string;
+  idempotency_key?: string;
+}
+
+export interface ConnectorConfig {
+  id: number;
+  name: string;
+  connector_type: ConnectorType;
+  config: any;
+  enabled: boolean;
+  last_tested_at?: string;
+  test_status?: string;
+  test_message?: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface ConnectorConfigCreate {
+  name: string;
+  connector_type: ConnectorType;
+  config: any;
+  enabled?: boolean;
+}
+
+export interface WorkflowTestRequest {
+  vulnerability_id: string;
+}
+
+export interface WorkflowTestResult {
+  rules_matched: boolean;
+  matched_rules: any[];
+  actions_to_execute: any[];
+  test_log: any;
+}
+
 // Services API
 
 export interface CreateUserRequest {
@@ -260,6 +383,160 @@ export const vulnerabilitiesAPI = {
   },
 };
 
+// Workflows
+export const workflowAPI = {
+  getAll: async (params?: { status?: WorkflowStatus; enabled?: boolean; skip?: number; limit?: number }): Promise<Workflow[]> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.status) {
+      searchParams.append('status', params.status);
+    }
+    if (params?.enabled !== undefined) {
+      searchParams.append('enabled', params.enabled.toString());
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    
+    const response = await apiClient.get(`/api/v1/workflows/?${searchParams}`);
+    return response.data;
+  },
+
+  getById: async (workflowId: number): Promise<Workflow> => {
+    const response = await apiClient.get(`/api/v1/workflows/${workflowId}`);
+    return response.data;
+  },
+
+  create: async (workflow: WorkflowCreate): Promise<Workflow> => {
+    const response = await apiClient.post('/api/v1/workflows/', workflow);
+    return response.data;
+  },
+
+  update: async (workflowId: number, workflow: Partial<WorkflowCreate>): Promise<Workflow> => {
+    const response = await apiClient.put(`/api/v1/workflows/${workflowId}`, workflow);
+    return response.data;
+  },
+
+  delete: async (workflowId: number): Promise<void> => {
+    await apiClient.delete(`/api/v1/workflows/${workflowId}`);
+  },
+
+  test: async (workflowId: number, testRequest: WorkflowTestRequest): Promise<WorkflowTestResult> => {
+    const response = await apiClient.post(`/api/v1/workflows/${workflowId}/test`, testRequest);
+    return response.data;
+  },
+
+  execute: async (workflowId: number, testRequest: WorkflowTestRequest): Promise<any> => {
+    const response = await apiClient.post(`/api/v1/workflows/${workflowId}/execute`, testRequest);
+    return response.data;
+  },
+
+  getExecutions: async (workflowId: number, params?: { status?: ExecutionStatus; skip?: number; limit?: number }): Promise<WorkflowExecution[]> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.status) {
+      searchParams.append('status', params.status);
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    
+    const response = await apiClient.get(`/api/v1/workflows/${workflowId}/executions?${searchParams}`);
+    return response.data;
+  },
+
+  getAllExecutions: async (params?: { workflow_id?: number; vulnerability_id?: string; status?: ExecutionStatus; skip?: number; limit?: number }): Promise<WorkflowExecution[]> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.workflow_id) {
+      searchParams.append('workflow_id', params.workflow_id.toString());
+    }
+    if (params?.vulnerability_id) {
+      searchParams.append('vulnerability_id', params.vulnerability_id);
+    }
+    if (params?.status) {
+      searchParams.append('status', params.status);
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    
+    const response = await apiClient.get(`/api/v1/workflows/executions/?${searchParams}`);
+    return response.data;
+  },
+
+  getExecutionDetails: async (executionId: number): Promise<any> => {
+    const response = await apiClient.get(`/api/v1/workflows/executions/${executionId}`);
+    return response.data;
+  },
+
+  getStats: async (): Promise<any> => {
+    const response = await apiClient.get('/api/v1/workflows/stats/');
+    return response.data;
+  },
+};
+
+// Connectors
+export const connectorAPI = {
+  getAll: async (params?: { connector_type?: ConnectorType; enabled?: boolean; skip?: number; limit?: number }): Promise<ConnectorConfig[]> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.connector_type) {
+      searchParams.append('connector_type', params.connector_type);
+    }
+    if (params?.enabled !== undefined) {
+      searchParams.append('enabled', params.enabled.toString());
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    
+    const response = await apiClient.get(`/api/v1/connectors/?${searchParams}`);
+    return response.data;
+  },
+
+  getById: async (connectorId: number): Promise<ConnectorConfig> => {
+    const response = await apiClient.get(`/api/v1/connectors/${connectorId}`);
+    return response.data;
+  },
+
+  create: async (connector: ConnectorConfigCreate): Promise<ConnectorConfig> => {
+    const response = await apiClient.post('/api/v1/connectors/', connector);
+    return response.data;
+  },
+
+  update: async (connectorId: number, connector: Partial<ConnectorConfigCreate>): Promise<ConnectorConfig> => {
+    const response = await apiClient.put(`/api/v1/connectors/${connectorId}`, connector);
+    return response.data;
+  },
+
+  delete: async (connectorId: number): Promise<void> => {
+    await apiClient.delete(`/api/v1/connectors/${connectorId}`);
+  },
+
+  test: async (connectorId: number): Promise<any> => {
+    const response = await apiClient.post(`/api/v1/connectors/${connectorId}/test`);
+    return response.data;
+  },
+
+  getTypes: async (): Promise<{ supported_types: ConnectorType[] }> => {
+    const response = await apiClient.get('/api/v1/connectors/types/');
+    return response.data;
+  },
+};
+
 // Inventory
 export const inventoryAPI = {
   getAll: async (host_id?: string, skip = 0, limit = 100): Promise<Inventory[]> => {
@@ -300,4 +577,4 @@ export const opensearchAPI = {
 // Fonction utilitaire pour vérifier si l'utilisateur est connecté
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('access_token');
-}; 
+};

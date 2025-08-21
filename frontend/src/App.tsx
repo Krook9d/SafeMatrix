@@ -13,6 +13,9 @@ import Vulnerabilities from './pages/Vulnerabilities';
 import VulnerabilityDetail from './pages/VulnerabilityDetail';
 import Inventory from './pages/Inventory';
 import DSLQuery from './pages/DSLQuery';
+import Workflows from './pages/Workflows';
+import WorkflowForm from './pages/WorkflowForm';
+import Connectors from './pages/Connectors';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -237,6 +240,10 @@ const App: React.FC = () => {
               <Route path="vulnerabilities/:cveId" element={<VulnerabilityDetail />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="dsl-query" element={<DSLQuery />} />
+              <Route path="workflows" element={<Workflows />} />
+              <Route path="workflows/new" element={<WorkflowForm />} />
+              <Route path="workflows/:id/edit" element={<WorkflowForm />} />
+              <Route path="connectors" element={<Connectors />} />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

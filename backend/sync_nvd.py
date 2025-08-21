@@ -9,6 +9,8 @@ sys.path.append(os.path.dirname(__file__))
 from core.nvd_service import NVDService
 from core.opensearch_client import get_opensearch_client
 from crud.vulnerability import bulk_insert_vulnerabilities
+from core.workflow_engine import WorkflowEngine
+from core.database import SessionLocal
 
 # Configure logging with better formatting
 logging.basicConfig(
@@ -64,6 +66,10 @@ def run_sync():
         
         logger.info(f"Processing in batches of {BATCH_SIZE} vulnerabilities...")
         
+        # Initialize workflow engine for processing
+        db = SessionLocal()
+        workflow_engine = WorkflowEngine(db)
+        
         # The sync_all_vulnerabilities method is a memory-efficient generator
         for cve in nvd_service.sync_all_vulnerabilities():
             vulnerabilities_batch.append(cve)
@@ -73,6 +79,15 @@ def run_sync():
             if len(vulnerabilities_batch) >= BATCH_SIZE:
                 logger.info(f"Inserting batch of {len(vulnerabilities_batch)} vulnerabilities (total: {total_processed})...")
                 bulk_insert_vulnerabilities(opensearch_client, vulnerabilities_batch)
+                
+                # Process workflows for each vulnerability in the batch
+                for vulnerability_data in vulnerabilities_batch:
+                    try:
+                        import asyncio
+                        asyncio.create_task(workflow_engine.process_vulnerability_ingest(vulnerability_data))
+                    except Exception as e:
+                        logger.error(f"Error processing workflows for {vulnerability_data.get('id', 'unknown')}: {e}")
+                
                 vulnerabilities_batch = []  # Reset the batch
                 
                 # Progress logging every 1000 vulnerabilities
@@ -83,6 +98,17 @@ def run_sync():
         if vulnerabilities_batch:
             logger.info(f"Inserting final batch of {len(vulnerabilities_batch)} vulnerabilities...")
             bulk_insert_vulnerabilities(opensearch_client, vulnerabilities_batch)
+            
+            # Process workflows for remaining vulnerabilities
+            for vulnerability_data in vulnerabilities_batch:
+                try:
+                    import asyncio
+                    asyncio.create_task(workflow_engine.process_vulnerability_ingest(vulnerability_data))
+                except Exception as e:
+                    logger.error(f"Error processing workflows for {vulnerability_data.get('id', 'unknown')}: {e}")
+        
+        # Close database session
+        db.close()
 
         logger.info(f"NVD synchronization completed successfully! Total: {total_processed} vulnerabilities")
         logger.info("All vulnerabilities have been enriched with severity and cvss_score for optimal performance!")

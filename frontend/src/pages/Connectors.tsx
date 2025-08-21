@@ -1,0 +1,579 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  Grid,
+  Switch,
+  FormControlLabel,
+  useTheme,
+  alpha,
+  Fade,
+  Grow,
+} from '@mui/material';
+import {
+  Add,
+  Edit,
+  Delete,
+  Science,
+  CheckCircle,
+  Error,
+  Settings,
+  Email,
+  Security,
+  Business,
+} from '@mui/icons-material';
+import { connectorAPI } from '../services/api';
+import type { ConnectorConfig, ConnectorConfigCreate, ConnectorType } from '../services/api';
+
+const Connectors: React.FC = () => {
+  const [connectors, setConnectors] = useState<ConnectorConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingConnector, setEditingConnector] = useState<ConnectorConfig | null>(null);
+  const [testResults, setTestResults] = useState<{ [key: number]: any }>({});
+  
+  const theme = useTheme();
+
+  const [formData, setFormData] = useState<ConnectorConfigCreate>({
+    name: '',
+    connector_type: 'email',
+    config: {},
+    enabled: true,
+  });
+
+  useEffect(() => {
+    fetchConnectors();
+  }, []);
+
+  const fetchConnectors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await connectorAPI.getAll();
+      setConnectors(data);
+    } catch (err: any) {
+      console.error('Error loading connectors:', err);
+      setError('Failed to load connectors');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (editingConnector) {
+        await connectorAPI.update(editingConnector.id, formData);
+      } else {
+        await connectorAPI.create(formData);
+      }
+      
+      setDialogOpen(false);
+      setEditingConnector(null);
+      resetForm();
+      fetchConnectors();
+    } catch (err: any) {
+      console.error('Error saving connector:', err);
+      setError('Failed to save connector');
+    }
+  };
+
+  const handleEdit = (connector: ConnectorConfig) => {
+    setEditingConnector(connector);
+    setFormData({
+      name: connector.name,
+      connector_type: connector.connector_type,
+      config: connector.config,
+      enabled: connector.enabled,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (connectorId: number) => {
+    if (window.confirm('Are you sure you want to delete this connector?')) {
+      try {
+        await connectorAPI.delete(connectorId);
+        fetchConnectors();
+      } catch (err: any) {
+        console.error('Error deleting connector:', err);
+        setError('Failed to delete connector');
+      }
+    }
+  };
+
+  const handleTest = async (connectorId: number) => {
+    try {
+      const result = await connectorAPI.test(connectorId);
+      setTestResults({ ...testResults, [connectorId]: result });
+    } catch (err: any) {
+      console.error('Error testing connector:', err);
+      setTestResults({ 
+        ...testResults, 
+        [connectorId]: { success: false, message: 'Test failed' } 
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      connector_type: 'email',
+      config: {},
+      enabled: true,
+    });
+  };
+
+  const getConnectorIcon = (type: ConnectorType) => {
+    switch (type) {
+      case 'email':
+        return <Email />;
+      case 'thehive':
+        return <Security />;
+      case 'servicenow':
+        return <Business />;
+      default:
+        return <Settings />;
+    }
+  };
+
+  const renderConfigForm = () => {
+    switch (formData.connector_type) {
+      case 'email':
+        return (
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="SMTP Host"
+                value={formData.config.smtp_host || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, smtp_host: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="SMTP Port"
+                type="number"
+                value={formData.config.smtp_port || 587}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, smtp_port: parseInt(e.target.value) }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Username"
+                value={formData.config.username || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, username: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                value={formData.config.password || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, password: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="From Email"
+                value={formData.config.from_email || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, from_email: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.config.use_tls !== false}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      config: { ...formData.config, use_tls: e.target.checked }
+                    })}
+                  />
+                }
+                label="Use TLS"
+              />
+            </Grid>
+          </Grid>
+        );
+      
+      case 'thehive':
+        return (
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="TheHive URL"
+                value={formData.config.url || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, url: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="API Key"
+                type="password"
+                value={formData.config.api_key || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, api_key: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Organization (optional)"
+                value={formData.config.organization || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, organization: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.config.verify_ssl !== false}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      config: { ...formData.config, verify_ssl: e.target.checked }
+                    })}
+                  />
+                }
+                label="Verify SSL"
+              />
+            </Grid>
+          </Grid>
+        );
+      
+      case 'servicenow':
+        return (
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Instance URL"
+                value={formData.config.instance_url || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, instance_url: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Username"
+                value={formData.config.username || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, username: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                value={formData.config.password || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, password: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Table Name"
+                value={formData.config.table || 'incident'}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, table: e.target.value }
+                })}
+              />
+            </Grid>
+          </Grid>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      maxWidth: 'none', 
+      px: 3,
+      py: 3,
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'calc(100vh - 64px)',
+      background: 'linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%)'
+    }}>
+      {/* Header */}
+      <Fade in timeout={600}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+          <Box>
+            <Typography variant="h4" sx={{ 
+              fontWeight: 700,
+              color: theme.palette.primary.main,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Settings />
+              Connectors
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+              Manage external system integrations for workflow actions
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              resetForm();
+              setEditingConnector(null);
+              setDialogOpen(true);
+            }}
+          >
+            Add Connector
+          </Button>
+        </Box>
+      </Fade>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Connectors Table */}
+      <Fade in timeout={1000}>
+        <TableContainer component={Paper} sx={{ 
+          borderRadius: 2,
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          overflow: 'hidden'
+        }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+                <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Last Tested</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {connectors.map((connector, index) => (
+                <Grow in timeout={1200 + index * 100} key={connector.id}>
+                  <TableRow hover>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        {getConnectorIcon(connector.connector_type)}
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          {connector.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={connector.connector_type.charAt(0).toUpperCase() + connector.connector_type.slice(1)}
+                        variant="outlined"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Chip
+                          icon={connector.enabled ? <CheckCircle /> : <Error />}
+                          label={connector.enabled ? 'Enabled' : 'Disabled'}
+                          color={connector.enabled ? 'success' : 'default'}
+                          size="small"
+                        />
+                        {testResults[connector.id] && (
+                          <Chip
+                            icon={testResults[connector.id].success ? <CheckCircle /> : <Error />}
+                            label={testResults[connector.id].success ? 'Test OK' : 'Test Failed'}
+                            color={testResults[connector.id].success ? 'success' : 'error'}
+                            size="small"
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {connector.last_tested_at ? 
+                          new Date(connector.last_tested_at).toLocaleDateString() : 
+                          'Never'
+                        }
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={1}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleTest(connector.id)}
+                          color="primary"
+                        >
+                          <Science />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEdit(connector)}
+                          color="primary"
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(connector.id)}
+                          color="error"
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </Grow>
+              ))}
+            </TableBody>
+          </Table>
+          
+          {connectors.length === 0 && (
+            <Box sx={{ p: 6, textAlign: 'center' }}>
+              <Settings sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h5" color="text.secondary" gutterBottom>
+                No connectors configured
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Add your first connector to enable workflow actions
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => {
+                  resetForm();
+                  setEditingConnector(null);
+                  setDialogOpen(true);
+                }}
+              >
+                Add Connector
+              </Button>
+            </Box>
+          )}
+        </TableContainer>
+      </Fade>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {editingConnector ? 'Edit Connector' : 'Add New Connector'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Connector Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Connector Type</InputLabel>
+                <Select
+                  value={formData.connector_type}
+                  label="Connector Type"
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    connector_type: e.target.value as ConnectorType,
+                    config: {} // Reset config when type changes
+                  })}
+                >
+                  <MenuItem value="email">Email</MenuItem>
+                  <MenuItem value="thehive">TheHive</MenuItem>
+                  <MenuItem value="servicenow">ServiceNow</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.enabled}
+                    onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                  />
+                }
+                label="Enabled"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Configuration
+              </Typography>
+              {renderConfigForm()}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained">
+            {editingConnector ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default Connectors;
