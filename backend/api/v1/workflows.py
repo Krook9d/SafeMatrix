@@ -24,12 +24,27 @@ async def create_workflow(
     current_user: schemas_user.User = Depends(get_current_user)
 ):
     """Create a new workflow."""
-    workflow = crud_workflow.create_workflow(
-        db=db, 
-        workflow=workflow_in, 
-        created_by=current_user.username
-    )
-    return workflow
+    try:
+        print(f"Debug: Creating workflow with data: {workflow_in}")
+        print(f"Debug: Workflow name: {workflow_in.name}")
+        print(f"Debug: Workflow status: {workflow_in.status}")
+        print(f"Debug: Workflow rules: {workflow_in.rules}")
+        print(f"Debug: Workflow actions: {workflow_in.actions}")
+        
+        workflow = crud_workflow.create_workflow(
+            db=db, 
+            workflow=workflow_in, 
+            created_by=current_user.username
+        )
+        return workflow
+    except Exception as e:
+        print(f"Debug: Exception in create_workflow: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An unexpected error occurred: {e}"
+        )
 
 @router.get("/", response_model=List[Workflow])
 async def list_workflows(

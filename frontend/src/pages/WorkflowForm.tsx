@@ -95,7 +95,7 @@ const WorkflowForm: React.FC = () => {
   const [formData, setFormData] = useState<WorkflowCreate>({
     name: '',
     description: '',
-    status: 'draft',
+    status: 'DRAFT',
     rules: [{ field: 'cvss_score', operator: 'greater_than_or_equal', value: 7.0 }],
     rule_logic: 'AND',
     actions: [],
@@ -289,9 +289,9 @@ Affected Products: {{affected_products}}`,
                 label="Status"
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
               >
-                <MenuItem value="draft">Draft</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="DRAFT">Draft</MenuItem>
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
               </Select>
             </FormControl>
           </Grid>
