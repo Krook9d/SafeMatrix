@@ -129,9 +129,14 @@ class WorkflowEngine:
         try:
             logger.info(f"Executing workflow {workflow.id} for CVE {cve_id}")
             
+            # Convert rules from dict to RuleCondition objects
+            rule_conditions = []
+            for rule_dict in workflow.rules:
+                rule_conditions.append(RuleCondition(**rule_dict))
+            
             # Evaluate rules
             rules_result = self.rules_engine.evaluate_workflow(
-                workflow.rules,
+                rule_conditions,
                 workflow.rule_logic,
                 vulnerability_data
             )
@@ -298,9 +303,14 @@ class WorkflowEngine:
             Test results
         """
         try:
+            # Convert rules from dict to RuleCondition objects
+            rule_conditions = []
+            for rule_dict in workflow.rules:
+                rule_conditions.append(RuleCondition(**rule_dict))
+            
             # Evaluate rules
             rules_result = self.rules_engine.evaluate_workflow(
-                workflow.rules,
+                rule_conditions,
                 workflow.rule_logic,
                 vulnerability_data
             )
@@ -331,4 +341,133 @@ class WorkflowEngine:
                 "matched_rules": [],
                 "actions_to_execute": [],
                 "error": str(e)
+            }
+    
+    async def test_workflow_with_custom_data(
+        self, 
+        workflow: Workflow, 
+        test_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Test a workflow with custom data and actually execute actions.
+        
+        Args:
+            workflow: Workflow to test
+            test_data: Custom test data
+            
+        Returns:
+            Test execution results
+        """
+        try:
+            logger.info(f"Testing workflow {workflow.id} with custom data")
+            
+            # Convert rules from dict to RuleCondition objects
+            rule_conditions = []
+            for rule_dict in workflow.rules:
+                rule_conditions.append(RuleCondition(**rule_dict))
+            
+            # Evaluate rules
+            rules_result = self.rules_engine.evaluate_workflow(
+                rule_conditions,
+                workflow.rule_logic,
+                test_data
+            )
+            
+            logger.info(f"Rules evaluation result: {rules_result}")
+            logger.info(f"Test data: {test_data}")
+            
+            if not rules_result["matched"]:
+                logger.info("Rules not matched - no actions will be executed")
+                return {
+                    "success": True,
+                    "rules_matched": False,
+                    "matched_rules": rules_result.get("matched_rules", []),
+                    "actions_executed": 0,
+                    "results": [],
+                    "message": "Rules not matched - no actions executed"
+                }
+            
+            # Execute actions for real
+            action_results = []
+            actions_executed = 0
+            
+            logger.info(f"Rules matched! Executing {len(workflow.actions)} actions")
+            
+            # Convert actions from dict to WorkflowAction objects if needed
+            actions_to_execute = []
+            for action_dict in workflow.actions:
+                if isinstance(action_dict, dict):
+                    actions_to_execute.append(WorkflowAction(**action_dict))
+                else:
+                    actions_to_execute.append(action_dict)
+            
+            for i, action in enumerate(actions_to_execute):
+                try:
+                    logger.info(f"Executing test action {i}: {action.type}")
+                    
+                    # Get connector configuration
+                    connector_config = self.db.query(ConnectorConfig).filter(
+                        ConnectorConfig.id == action.config.connector_id
+                    ).first()
+                    
+                    if not connector_config or not connector_config.enabled:
+                        action_results.append({
+                            "action_type": action.type,
+                            "action_index": i,
+                            "success": False,
+                            "message": f"Connector {action.config.connector_id} not found or disabled"
+                        })
+                        continue
+                    
+                    # Create connector instance
+                    connector = ConnectorFactory.create_connector(
+                        connector_config.connector_type,
+                        connector_config.config
+                    )
+                    
+                    # Execute action with test data
+                    context = {
+                        "vulnerability_data": test_data,
+                        "execution_id": f"test-{datetime.utcnow().timestamp()}"
+                    }
+                    
+                    result = await connector.execute_action(action.config.dict(), context)
+                    
+                    action_results.append({
+                        "action_type": action.type,
+                        "action_index": i,
+                        "success": result.get("success", False),
+                        "message": result.get("message", "Action executed"),
+                        "details": result.get("details", {})
+                    })
+                    
+                    if result.get("success", False):
+                        actions_executed += 1
+                        
+                except Exception as e:
+                    logger.error(f"Error executing test action {i}: {e}")
+                    action_results.append({
+                        "action_type": action.type,
+                        "action_index": i,
+                        "success": False,
+                        "message": f"Error: {str(e)}"
+                    })
+            
+            return {
+                "success": True,
+                "execution_id": f"test-{int(datetime.utcnow().timestamp())}",
+                "rules_matched": True,
+                "matched_rules": rules_result.get("matched_rules", []),
+                "actions_executed": actions_executed,
+                "results": action_results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error testing workflow with custom data: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "rules_matched": False,
+                "actions_executed": 0,
+                "results": []
             }

@@ -134,6 +134,26 @@ async def test_workflow(
     
     return WorkflowTestResult(**result)
 
+@router.post("/{workflow_id}/test-custom")
+async def test_workflow_with_custom_data(
+    workflow_id: int,
+    *,
+    db: Session = Depends(get_db),
+    test_data: dict,
+    current_user: schemas_user.User = Depends(get_current_user)
+):
+    """Test a workflow with custom vulnerability data."""
+    # Get workflow
+    workflow = crud_workflow.get_workflow(db=db, workflow_id=workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    # Test workflow with custom data
+    engine = WorkflowEngine(db)
+    result = await engine.test_workflow_with_custom_data(workflow, test_data)
+    
+    return result
+
 @router.post("/{workflow_id}/execute")
 async def execute_workflow_manually(
     workflow_id: int,

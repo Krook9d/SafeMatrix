@@ -29,7 +29,7 @@ class EmailConnector(BaseConnector):
             
             # Recipients
             to_emails = action_config.get("to", [])
-            cc_emails = action_config.get("cc", [])
+            cc_emails = action_config.get("cc", []) or []  # Handle None case
             
             msg['To'] = ", ".join(to_emails)
             if cc_emails:

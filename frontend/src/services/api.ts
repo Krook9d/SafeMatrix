@@ -429,6 +429,11 @@ export const workflowAPI = {
     return response.data;
   },
 
+  testWithCustomData: async (workflowId: number, testData: any): Promise<any> => {
+    const response = await apiClient.post(`/api/v1/workflows/${workflowId}/test-custom`, testData);
+    return response.data;
+  },
+
   execute: async (workflowId: number, testRequest: WorkflowTestRequest): Promise<any> => {
     const response = await apiClient.post(`/api/v1/workflows/${workflowId}/execute`, testRequest);
     return response.data;

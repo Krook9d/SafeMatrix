@@ -79,36 +79,13 @@ const WorkflowTest: React.FC = () => {
       setError(null);
       setTestResult(null);
       
-      // TODO: Implement actual test API endpoint
-      // For now, simulate a test execution
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the real API with custom test data
+      const result = await workflowAPI.testWithCustomData(workflow.id, testData);
       
-      // Mock test result
-      const mockResult = {
-        success: true,
-        execution_id: Math.floor(Math.random() * 1000),
-        actions_executed: workflow.actions.length,
-        results: workflow.actions.map((action, index) => ({
-          action_type: action.type,
-          action_index: index,
-          success: Math.random() > 0.2, // 80% success rate
-          message: action.type === 'email' 
-            ? 'Email sent successfully to martcayrol@gmail.com'
-            : `${action.type} action completed`,
-          details: action.type === 'email' 
-            ? {
-                to: action.config.to,
-                subject: 'Security Alert: CVE-2024-0001 - CRITICAL Vulnerability Detected',
-                sent_at: new Date().toISOString()
-              }
-            : {}
-        }))
-      };
-      
-      setTestResult(mockResult);
+      setTestResult(result);
     } catch (err: any) {
       console.error('Error testing workflow:', err);
-      setError('Failed to test workflow');
+      setError('Failed to test workflow: ' + (err.response?.data?.detail || err.message));
     } finally {
       setTesting(false);
     }
