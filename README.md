@@ -99,10 +99,32 @@ Make sure the virtual environment is activated, then run:
 ```bash
 pip install -r requirements.txt
 ```
-**d. Setup env variable **
+**d. Setup environment variables**
 
-remove the ".exemple" of the .env name file
-set the variable you want
+1. Copy the environment template:
+   ```bash
+   cp backend/.env.exemple backend/.env
+   ```
+
+2. Edit the `backend/.env` file with your configuration:
+   - Set your NVD API token: `NVD_TOKEN_API=your-nvd-token`
+   - Set your Gmail credentials:
+     - Replace `your-email@gmail.com` with your Gmail address
+     - Replace `your-app-password-here` with your Gmail App Password
+     - Generate an App Password from: https://myaccount.google.com/security
+
+**d.1. Configure Gmail for email notifications**
+
+After setting up your `backend/.env` file, you need to update the database configuration:
+
+1. Edit `update_gmail_config.sql` and replace:
+   - `YOUR_GMAIL_ADDRESS` with your Gmail address
+   - `YOUR_GMAIL_APP_PASSWORD` with your Gmail App Password
+
+2. Apply the configuration to the database:
+   ```bash
+   docker exec -i postgres_db psql -U user -d main_db < update_gmail_config.sql
+   ```
 
 **e. Launch the development server**
 This command starts the server, which will automatically reload on every code change.
