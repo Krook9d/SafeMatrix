@@ -68,25 +68,46 @@ class EmailConnector(BaseConnector):
     
     async def test_connection(self) -> Dict[str, Any]:
         """
-        Test email configuration.
+        Test email configuration by sending a test email.
         """
         try:
+            # Prepare test email
+            msg = MIMEMultipart()
+            msg['From'] = f"{self.config.get('from_name', 'SafeMatrix')} <{self.config['from_email']}>"
+            msg['To'] = "test@example.com"
+            msg['Subject'] = "Test Email from SafeMatrix"
+            
+            # Add body
+            body = """
+            This is a test email from SafeMatrix.
+            
+            If you receive this email, your email connector is working correctly!
+            
+            ---
+            SafeMatrix Security Team
+            """
+            msg.attach(MIMEText(body, 'plain'))
+            
+            # Send email
             context_manager = ssl.create_default_context()
             
             with smtplib.SMTP(self.config['smtp_host'], self.config['smtp_port']) as server:
-                if self.config.get('use_tls', True):
+                if self.config.get('use_tls', False):
                     server.starttls(context=context_manager)
                 
                 if self.config.get('username') and self.config.get('password'):
                     server.login(self.config['username'], self.config['password'])
+                
+                # Send the email
+                server.send_message(msg)
             
             return {
                 "success": True,
-                "message": "Email configuration is valid"
+                "message": "Test email sent successfully to test@example.com"
             }
             
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Email configuration test failed: {str(e)}"
+                "message": f"Email test failed: {str(e)}"
             }

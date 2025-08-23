@@ -47,6 +47,14 @@ services:
       - NODE_ENV=development
     restart: unless-stopped
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   opensearch_data:

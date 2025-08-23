@@ -45,6 +45,14 @@ import {
 import { connectorAPI } from '../services/api';
 import type { ConnectorConfig, ConnectorConfigCreate, ConnectorType } from '../services/api';
 
+// Type for form data that allows empty connector type
+interface ConnectorFormData {
+  name: string;
+  connector_type: ConnectorType | '';
+  config: any;
+  enabled: boolean;
+}
+
 const Connectors: React.FC = () => {
   const [connectors, setConnectors] = useState<ConnectorConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +63,9 @@ const Connectors: React.FC = () => {
   
   const theme = useTheme();
 
-  const [formData, setFormData] = useState<ConnectorConfigCreate>({
+  const [formData, setFormData] = useState<ConnectorFormData>({
     name: '',
-    connector_type: 'email',
+    connector_type: '',
     config: {},
     enabled: true,
   });
@@ -82,10 +90,24 @@ const Connectors: React.FC = () => {
 
   const handleSave = async () => {
     try {
+      // Validate that connector type is selected
+      if (!formData.connector_type) {
+        setError('Please select a connector type');
+        return;
+      }
+
+      // Convert form data to API format
+      const apiData: ConnectorConfigCreate = {
+        name: formData.name,
+        connector_type: formData.connector_type as ConnectorType,
+        config: formData.config,
+        enabled: formData.enabled,
+      };
+
       if (editingConnector) {
-        await connectorAPI.update(editingConnector.id, formData);
+        await connectorAPI.update(editingConnector.id, apiData);
       } else {
-        await connectorAPI.create(formData);
+        await connectorAPI.create(apiData);
       }
       
       setDialogOpen(false);
@@ -137,7 +159,7 @@ const Connectors: React.FC = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      connector_type: 'email',
+      connector_type: '',
       config: {},
       enabled: true,
     });
@@ -145,11 +167,11 @@ const Connectors: React.FC = () => {
 
   const getConnectorIcon = (type: ConnectorType) => {
     switch (type) {
-      case 'email':
+      case 'EMAIL':
         return <Email />;
-      case 'thehive':
+      case 'THEHIVE':
         return <Security />;
-      case 'servicenow':
+      case 'SERVICENOW':
         return <Business />;
       default:
         return <Settings />;
@@ -157,8 +179,16 @@ const Connectors: React.FC = () => {
   };
 
   const renderConfigForm = () => {
+    if (!formData.connector_type) {
+      return (
+        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+          Please select a connector type to configure its settings.
+        </Typography>
+      );
+    }
+
     switch (formData.connector_type) {
-      case 'email':
+      case 'EMAIL':
         return (
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
@@ -235,7 +265,7 @@ const Connectors: React.FC = () => {
           </Grid>
         );
       
-      case 'thehive':
+      case 'THEHIVE':
         return (
           <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -289,7 +319,7 @@ const Connectors: React.FC = () => {
           </Grid>
         );
       
-      case 'servicenow':
+      case 'SERVICENOW':
         return (
           <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -540,9 +570,9 @@ const Connectors: React.FC = () => {
                     config: {} // Reset config when type changes
                   })}
                 >
-                  <MenuItem value="email">Email</MenuItem>
-                  <MenuItem value="thehive">TheHive</MenuItem>
-                  <MenuItem value="servicenow">ServiceNow</MenuItem>
+                  <MenuItem value="EMAIL">Email</MenuItem>
+                  <MenuItem value="THEHIVE">TheHive</MenuItem>
+                  <MenuItem value="SERVICENOW">ServiceNow</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

@@ -4,21 +4,21 @@ from datetime import datetime
 from enum import Enum
 
 class WorkflowStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    DRAFT = "draft"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    DRAFT = "DRAFT"
 
 class ConnectorType(str, Enum):
-    EMAIL = "email"
-    THEHIVE = "thehive"
-    SERVICENOW = "servicenow"
+    EMAIL = "EMAIL"
+    THEHIVE = "THEHIVE"
+    SERVICENOW = "SERVICENOW"
 
 class ExecutionStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
 
 class RuleOperator(str, Enum):
     EQUALS = "equals"
@@ -168,8 +168,8 @@ class EmailConnectorConfig(BaseModel):
     smtp_host: str = Field(..., description="SMTP server host")
     smtp_port: int = Field(default=587, description="SMTP server port")
     use_tls: bool = Field(default=True, description="Use TLS encryption")
-    username: str = Field(..., description="SMTP username")
-    password: str = Field(..., description="SMTP password")
+    username: Optional[str] = Field(default="", description="SMTP username")
+    password: Optional[str] = Field(default="", description="SMTP password")
     from_email: str = Field(..., description="From email address")
     from_name: Optional[str] = Field(default=None, description="From name")
 

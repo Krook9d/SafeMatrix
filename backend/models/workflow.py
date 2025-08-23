@@ -4,25 +4,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 from datetime import datetime
+from backend.schemas.workflow import ConnectorType, WorkflowStatus, ExecutionStatus
 
 Base = declarative_base()
-
-class WorkflowStatus(enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    DRAFT = "draft"
-
-class ConnectorType(enum.Enum):
-    EMAIL = "email"
-    THEHIVE = "thehive"
-    SERVICENOW = "servicenow"
-
-class ExecutionStatus(enum.Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
 
 class RuleOperator(enum.Enum):
     EQUALS = "equals"

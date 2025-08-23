@@ -21,12 +21,25 @@ async def create_connector(
     current_user: schemas_user.User = Depends(get_current_user)
 ):
     """Create a new connector configuration."""
-    connector = crud_workflow.create_connector_config(
-        db=db,
-        connector=connector_in,
-        created_by=current_user.username
-    )
-    return connector
+    try:
+        print(f"Debug: Received connector data: {connector_in}")
+        print(f"Debug: Connector type: {connector_in.connector_type}")
+        print(f"Debug: Config: {connector_in.config}")
+        
+        connector = crud_workflow.create_connector_config(
+            db=db,
+            connector=connector_in,
+            created_by=current_user.username
+        )
+        return connector
+    except Exception as e:
+        print(f"Debug: Exception in create_connector: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An unexpected error occurred: {e}"
+        )
 
 @router.get("/", response_model=List[ConnectorConfig])
 async def list_connectors(
@@ -102,17 +115,31 @@ async def test_connector(
         raise HTTPException(status_code=404, detail="Connector not found")
     
     try:
-        # Create connector instance and test
-        connector = ConnectorFactory.create_connector(
-            connector_config.connector_type,
-            connector_config.config
-        )
+        print(f"Debug: Testing connector {connector_id} of type {connector_config.connector_type}")
+        print(f"Debug: Config: {connector_config.config}")
         
-        result = await connector.test_connection()
+        # Create connector instance and test
+        try:
+            connector = ConnectorFactory.create_connector(
+                connector_config.connector_type,
+                connector_config.config
+            )
+            print(f"Debug: Created connector instance: {connector}")
+        except Exception as e:
+            print(f"Debug: Failed to create connector: {e}")
+            raise
+        
+        try:
+            result = await connector.test_connection()
+            print(f"Debug: Test result: {result}")
+        except Exception as e:
+            print(f"Debug: Failed to test connection: {e}")
+            raise
         
         # Update test status in database
         test_status = "success" if result.get("success") else "failed"
         test_message = result.get("message", "")
+        print(f"Debug: Test status: {test_status}, message: {test_message}")
         
         crud_workflow.update_connector_test_status(
             db=db,
@@ -124,6 +151,10 @@ async def test_connector(
         return ConnectorTestResult(**result)
         
     except Exception as e:
+        print(f"Debug: Exception in test_connector: {e}")
+        import traceback
+        traceback.print_exc()
+        
         # Update test status as failed
         crud_workflow.update_connector_test_status(
             db=db,
