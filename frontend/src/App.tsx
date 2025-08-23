@@ -15,6 +15,8 @@ import Inventory from './pages/Inventory';
 import DSLQuery from './pages/DSLQuery';
 import Workflows from './pages/Workflows';
 import WorkflowForm from './pages/WorkflowForm';
+import WorkflowExecutions from './pages/WorkflowExecutions';
+import WorkflowTest from './pages/WorkflowTest';
 import Connectors from './pages/Connectors';
 
 // Professional Material-UI theme
@@ -243,6 +245,8 @@ const App: React.FC = () => {
               <Route path="workflows" element={<Workflows />} />
               <Route path="workflows/new" element={<WorkflowForm />} />
               <Route path="workflows/:id/edit" element={<WorkflowForm />} />
+              <Route path="workflows/:id/executions" element={<WorkflowExecutions />} />
+              <Route path="workflows/:id/test" element={<WorkflowTest />} />
               <Route path="connectors" element={<Connectors />} />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />
