@@ -123,7 +123,7 @@ After setting up your `backend/.env` file, you need to update the database confi
 
 2. Apply the configuration to the database:
    ```bash
-   docker exec -i postgres_db psql -U user -d main_db < update_gmail_config.sql
+   cmd /c "docker exec -e PGPASSWORD=password -i postgres_db psql -v ON_ERROR_STOP=1 -U user -d main_db < update_gmail_config.sql"
    ```
 
 **e. Launch the development server**
