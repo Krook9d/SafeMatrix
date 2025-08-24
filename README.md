@@ -133,10 +133,10 @@ uvicorn backend.main:app --reload
 ```
 The API will then be accessible at `http://127.0.0.1:8000`.
 
-#### 3. Launch Frontend (React)
+#### 3. reLaunch Frontend (React)
 
 ```bash
-docker compose up --build frontend
+docker-compose restart frontend
 ```
 The frontend will be accessible at `http://localhost:5173`.
 
