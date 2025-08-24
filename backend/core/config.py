@@ -14,8 +14,13 @@ class Settings(BaseSettings):
 
     # Using Field to allow for an alias from the .env file
     nvd_api_key: str | None = Field(default=None, alias='NVD_TOKEN_API')
+    
+    # Gmail configuration for email notifications
+    gmail_username: str | None = Field(default=None, alias='GMAIL_USERNAME')
+    gmail_app_password: str | None = Field(default=None, alias='GMAIL_APP_PASSWORD')
+    gmail_from_name: str | None = Field(default=None, alias='GMAIL_FROM_NAME')
 
-    model_config = SettingsConfigDict(env_file="backend/.env", case_sensitive=True)
+    model_config = SettingsConfigDict(env_file="backend/.env", case_sensitive=True, extra='ignore')
 
 
 settings = Settings() 
