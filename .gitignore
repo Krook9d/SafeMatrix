@@ -16,3 +16,4 @@ __pycache__/
 # Ignorer dossiers système
 .DS_Store
 Thumbs.db
+update_gmail_config.sql
