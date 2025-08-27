@@ -88,11 +88,13 @@ services:
       - SECRET_KEY=your-secret-key-here-change-in-production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - PYTHONPATH=/app
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
+      - .:/app
     restart: unless-stopped
-    working_dir: /app/backend
-    command: celery -A core.task_queue.celery_app worker --loglevel=info --queues=workflows,batch_processing
+    working_dir: /app
+    command: celery -A backend.core.task_queue.celery_app worker --loglevel=info --queues=workflows,batch_processing
 
   celery-flower:
     build:
@@ -108,13 +110,15 @@ services:
       - SECRET_KEY=your-secret-key-here-change-in-production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - PYTHONPATH=/app
     ports:
       - "5555:5555"
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
+      - .:/app
     restart: unless-stopped
-    working_dir: /app/backend
-    command: celery -A core.task_queue.celery_app flower --port=5555
+    working_dir: /app
+    command: celery -A backend.core.task_queue.celery_app flower --port=5555
 
   workflow-scheduler:
     build:
@@ -131,7 +135,9 @@ services:
       - SECRET_KEY=your-secret-key-here-change-in-production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - PYTHONPATH=/app
     volumes:
+      - ./backend:/app/backend
       - .:/app
     restart: unless-stopped
     working_dir: /app
