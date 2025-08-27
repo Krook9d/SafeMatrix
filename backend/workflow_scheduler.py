@@ -33,8 +33,7 @@ class WorkflowScheduler:
     """Service to handle workflow scheduling and triggers"""
     
     def __init__(self):
-        self.db = SessionLocal()
-        self.workflow_engine = WorkflowEngine(self.db)
+        # Don't keep a persistent DB session - create new ones for each operation
         self.opensearch_client = get_opensearch_client()
         self.running = False
         
@@ -62,14 +61,18 @@ class WorkflowScheduler:
     def stop(self):
         """Stop the workflow scheduler"""
         self.running = False
-        self.db.close()
         logger.info("Workflow Scheduler stopped")
     
     def _check_scheduled_workflows(self):
         """Check and execute scheduled workflows"""
+        db = None
         try:
+            # Create a new database session for this operation
+            db = SessionLocal()
+            workflow_engine = WorkflowEngine(db)
+            
             # Get active workflows with schedule trigger
-            scheduled_workflows = self.db.query(Workflow).filter(
+            scheduled_workflows = db.query(Workflow).filter(
                 and_(
                     Workflow.status == WorkflowStatus.ACTIVE,
                     Workflow.enabled == True,
@@ -81,16 +84,24 @@ class WorkflowScheduler:
             for workflow in scheduled_workflows:
                 if self._should_execute_cron(workflow):
                     logger.info(f"Executing scheduled workflow: {workflow.name}")
-                    asyncio.run(self._execute_workflow_on_all_vulnerabilities(workflow))
+                    asyncio.run(self._execute_workflow_on_all_vulnerabilities(workflow, workflow_engine))
                     
         except Exception as e:
             logger.error(f"Error checking scheduled workflows: {e}")
+        finally:
+            if db:
+                db.close()
     
     def _check_ingest_workflows(self):
         """Check for new vulnerabilities and trigger ingest workflows"""
+        db = None
         try:
+            # Create a new database session for this operation
+            db = SessionLocal()
+            workflow_engine = WorkflowEngine(db)
+            
             # Get active workflows with ingest trigger  
-            ingest_workflows = self.db.query(Workflow).filter(
+            ingest_workflows = db.query(Workflow).filter(
                 and_(
                     Workflow.status == WorkflowStatus.ACTIVE,
                     Workflow.enabled == True,
@@ -110,10 +121,13 @@ class WorkflowScheduler:
                 
                 for workflow in ingest_workflows:
                     for vuln in new_vulnerabilities:
-                        asyncio.run(self._execute_workflow_on_vulnerability(workflow, vuln))
+                        asyncio.run(self._execute_workflow_on_vulnerability(workflow, vuln, workflow_engine))
                         
         except Exception as e:
             logger.error(f"Error checking ingest workflows: {e}")
+        finally:
+            if db:
+                db.close()
     
     def _should_execute_cron(self, workflow: Workflow) -> bool:
         """Check if a cron workflow should be executed now"""
@@ -126,7 +140,7 @@ class WorkflowScheduler:
         except Exception:
             return False
     
-    async def _execute_workflow_on_all_vulnerabilities(self, workflow: Workflow):
+    async def _execute_workflow_on_all_vulnerabilities(self, workflow: Workflow, workflow_engine: WorkflowEngine):
         """Execute workflow against all vulnerabilities in the database"""
         try:
             # Get all vulnerabilities (paginated)
@@ -139,17 +153,17 @@ class WorkflowScheduler:
                     break
                     
                 for vuln in vulnerabilities:
-                    await self._execute_workflow_on_vulnerability(workflow, vuln)
+                    await self._execute_workflow_on_vulnerability(workflow, vuln, workflow_engine)
                     
                 skip += limit
                 
         except Exception as e:
             logger.error(f"Error executing workflow on all vulnerabilities: {e}")
     
-    async def _execute_workflow_on_vulnerability(self, workflow: Workflow, vulnerability_data: Dict[str, Any]):
+    async def _execute_workflow_on_vulnerability(self, workflow: Workflow, vulnerability_data: Dict[str, Any], workflow_engine: WorkflowEngine):
         """Execute a workflow against a single vulnerability"""
         try:
-            result = await self.workflow_engine.execute_workflow(
+            result = await workflow_engine.execute_workflow(
                 workflow, 
                 vulnerability_data, 
                 trigger_type="schedule" if workflow.trigger_on_schedule else "ingest"

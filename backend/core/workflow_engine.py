@@ -215,8 +215,14 @@ class WorkflowEngine:
             actions_executed = 0
             actions_failed = 0
             
-            for action in workflow.actions:
+            for action_dict in workflow.actions:
                 try:
+                    # Convert dict to WorkflowAction if needed
+                    if isinstance(action_dict, dict):
+                        action = WorkflowAction(**action_dict)
+                    else:
+                        action = action_dict
+                        
                     action_result = await self.execute_action(
                         action, 
                         vulnerability_data, 
@@ -371,11 +377,17 @@ class WorkflowEngine:
             # Prepare actions that would be executed
             actions_to_execute = []
             if rules_result["matched"]:
-                for action in workflow.actions:
-                    actions_to_execute.append({
-                        "type": action.type,
-                        "config": action.config.dict()
-                    })
+                for action_dict in workflow.actions:
+                    if isinstance(action_dict, dict):
+                        actions_to_execute.append({
+                            "type": action_dict.get("type", "unknown"),
+                            "config": action_dict.get("config", {})
+                        })
+                    else:
+                        actions_to_execute.append({
+                            "type": action_dict.type,
+                            "config": action_dict.config.dict()
+                        })
             
             return {
                 "rules_matched": rules_result["matched"],

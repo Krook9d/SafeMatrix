@@ -162,10 +162,7 @@ class WorkflowQueue:
     """
     
     def __init__(self):
-        if celery_app is None:
-            self.celery = get_celery_app()
-        else:
-            self.celery = celery_app
+        self.celery = celery_app
     
     def enqueue_workflow(
         self,
@@ -229,8 +226,7 @@ class WorkflowQueue:
         Returns:
             Task status
         """
-        app = self.celery or get_celery_app()
-        result = app.AsyncResult(task_id)
+        result = self.celery.AsyncResult(task_id)
         
         return {
             "task_id": task_id,
@@ -250,8 +246,7 @@ class WorkflowQueue:
             True if successfully cancelled
         """
         try:
-            app = self.celery or get_celery_app()
-            app.control.revoke(task_id, terminate=True)
+            self.celery.control.revoke(task_id, terminate=True)
             logger.info(f"Task {task_id} cancelled")
             return True
         except Exception as e:
@@ -266,8 +261,7 @@ class WorkflowQueue:
             Queue statistics
         """
         try:
-            app = self.celery or get_celery_app()
-            inspect = app.control.inspect()
+            inspect = self.celery.control.inspect()
             
             active_tasks = inspect.active()
             scheduled_tasks = inspect.scheduled()
