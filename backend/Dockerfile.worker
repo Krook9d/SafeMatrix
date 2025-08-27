@@ -12,10 +12,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY backend/ .
+COPY backend/ ./backend/
 
 # Set environment variables
-ENV PYTHONPATH=/app:/app/backend
+ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # Create __init__.py files to make Python recognize directories as modules

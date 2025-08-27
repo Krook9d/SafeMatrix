@@ -1,5 +1,26 @@
+import os
+from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Find the .env file in the correct location
+def find_env_file():
+    """Find the .env file in the correct location"""
+    possible_paths = [
+        ".env",  # Current directory (when running from backend/)
+        "backend/.env",  # When running from project root
+        Path(__file__).parent.parent / ".env",  # Relative to this file
+    ]
+    
+    for path in possible_paths:
+        if Path(path).exists():
+            return str(path)
+    
+    # Return default if none found
+    return ".env"
+
+# Get the env file path before class definition
+ENV_FILE_PATH = find_env_file()
 
 class Settings(BaseSettings):
     """
@@ -25,7 +46,11 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
 
-    model_config = SettingsConfigDict(env_file="backend/.env", case_sensitive=True, extra='ignore')
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE_PATH,
+        case_sensitive=True,
+        extra='ignore'
+    )
 
 
 def get_settings():

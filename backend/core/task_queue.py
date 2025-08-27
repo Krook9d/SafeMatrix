@@ -6,7 +6,7 @@ from celery import Celery
 try:
     from backend.core.config import get_settings
 except ImportError:
-    from core.config import get_settings
+    from .config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -56,9 +56,9 @@ def execute_workflow_task(
         from backend.core.workflow_engine import WorkflowEngine
         from backend.crud.workflow import get_workflow
     except ImportError:
-        from core.database import SessionLocal
-        from core.workflow_engine import WorkflowEngine
-        from crud.workflow import get_workflow
+        from .database import SessionLocal
+        from .workflow_engine import WorkflowEngine
+        from ..crud.workflow import get_workflow
     import asyncio
     
     try:
@@ -112,8 +112,8 @@ def process_vulnerability_batch_task(self, vulnerabilities_data: list):
         from backend.core.database import SessionLocal
         from backend.core.workflow_engine import WorkflowEngine
     except ImportError:
-        from core.database import SessionLocal
-        from core.workflow_engine import WorkflowEngine
+        from .database import SessionLocal
+        from .workflow_engine import WorkflowEngine
     import asyncio
     
     try:

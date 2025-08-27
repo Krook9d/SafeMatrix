@@ -116,6 +116,27 @@ services:
     working_dir: /app/backend
     command: celery -A core.task_queue.celery_app flower --port=5555
 
+  workflow-scheduler:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.worker
+    depends_on:
+      - redis
+      - postgres
+      - opensearch
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/main_db
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - SECRET_KEY=your-secret-key-here-change-in-production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    working_dir: /app
+    command: python backend/workflow_scheduler.py
+
 volumes:
   postgres_data:
   opensearch_data:

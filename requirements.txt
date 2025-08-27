@@ -17,3 +17,4 @@ alembic==1.13.1
 redis==5.0.1
 celery==5.3.4
 flower==2.0.1
+schedule==1.2.0

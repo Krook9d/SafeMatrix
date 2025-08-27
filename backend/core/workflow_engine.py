@@ -5,11 +5,20 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
-from backend.core.rules_engine import RulesEngine
-from backend.core.connectors.factory import ConnectorFactory
-from backend.schemas.workflow import RuleCondition, WorkflowAction
-from backend.core.task_queue import WorkflowQueue
+try:
+    # Try importing from backend module (when running from project root)
+    from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
+    from backend.core.rules_engine import RulesEngine
+    from backend.core.connectors.factory import ConnectorFactory
+    from backend.schemas.workflow import RuleCondition, WorkflowAction
+    from backend.core.task_queue import WorkflowQueue
+except ImportError:
+    # Fall back to local imports (when running from backend directory)
+    from models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
+    from .rules_engine import RulesEngine
+    from .connectors.factory import ConnectorFactory
+    from schemas.workflow import RuleCondition, WorkflowAction
+    from .task_queue import WorkflowQueue
 import hashlib
 import json
 
@@ -49,6 +58,10 @@ class WorkflowEngine:
                     Workflow.trigger_on_ingest == True
                 )
             ).all()
+            
+            logger.info(f"Found {len(workflows)} active workflows for ingest trigger")
+            for workflow in workflows:
+                logger.info(f"Workflow {workflow.id} '{workflow.name}' - Status: {workflow.status}, Enabled: {workflow.enabled}")
             
             should_use_queue = use_queue if use_queue is not None else self.use_queue
             

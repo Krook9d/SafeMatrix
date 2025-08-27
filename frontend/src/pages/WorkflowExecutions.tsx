@@ -69,8 +69,23 @@ const WorkflowExecutions: React.FC = () => {
       const workflowData = await workflowAPI.getById(parseInt(id));
       setWorkflow(workflowData);
       
-      // TODO: Implement executions API endpoint
-      // For now, we'll show mock data
+      // Fetch real execution data
+      const executionsData = await workflowAPI.getExecutions(parseInt(id));
+      setExecutions(executionsData.map(execution => ({
+        id: execution.id,
+        workflow_id: execution.workflow_id,
+        status: execution.status.toLowerCase() as 'pending' | 'running' | 'completed' | 'failed',
+        started_at: execution.started_at,
+        completed_at: execution.completed_at,
+        error_message: execution.error_message,
+        trigger_type: execution.trigger_type as 'manual' | 'schedule' | 'ingest',
+      })));
+      
+    } catch (err: any) {
+      console.error('Error loading workflow executions:', err);
+      setError('Failed to load workflow executions');
+      
+      // Fallback to mock data if API fails
       const mockExecutions: WorkflowExecution[] = [
         {
           id: 1,
@@ -80,28 +95,8 @@ const WorkflowExecutions: React.FC = () => {
           completed_at: new Date(Date.now() - 3500000).toISOString(),
           trigger_type: 'schedule',
         },
-        {
-          id: 2,
-          workflow_id: parseInt(id),
-          status: 'failed',
-          started_at: new Date(Date.now() - 7200000).toISOString(),
-          completed_at: new Date(Date.now() - 7100000).toISOString(),
-          error_message: 'SMTP connection failed',
-          trigger_type: 'manual',
-        },
-        {
-          id: 3,
-          workflow_id: parseInt(id),
-          status: 'running',
-          started_at: new Date(Date.now() - 300000).toISOString(),
-          trigger_type: 'ingest',
-        },
       ];
-      
       setExecutions(mockExecutions);
-    } catch (err: any) {
-      console.error('Error loading workflow executions:', err);
-      setError('Failed to load workflow executions');
     } finally {
       setLoading(false);
     }
@@ -120,6 +115,18 @@ const WorkflowExecutions: React.FC = () => {
       default:
         return 'default';
     }
+  };
+
+  // Map backend status to frontend status
+  const mapStatus = (backendStatus: string): WorkflowExecution['status'] => {
+    const statusMap: { [key: string]: WorkflowExecution['status'] } = {
+      'SUCCESS': 'completed',
+      'FAILED': 'failed',
+      'RUNNING': 'running',
+      'PENDING': 'pending',
+      'SKIPPED': 'completed'
+    };
+    return statusMap[backendStatus] || 'pending';
   };
 
   const getStatusIcon = (status: WorkflowExecution['status']) => {
