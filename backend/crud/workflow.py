@@ -12,6 +12,25 @@ from backend.schemas.workflow import (
 )
 
 # Workflow CRUD operations
+def _normalize_workflow_actions(actions: List[Any]) -> List[Dict[str, Any]]:
+    """
+    Normalize workflow actions to ensure they use connector_id: 0 for auto-resolution.
+    This makes workflows portable across different installations.
+    """
+    normalized_actions = []
+    
+    for action in actions:
+        action_dict = action.dict() if hasattr(action, 'dict') else action
+        
+        # Ensure config exists and set connector_id to 0 for auto-resolution
+        if 'config' not in action_dict:
+            action_dict['config'] = {}
+        
+        action_dict['config']['connector_id'] = 0
+        normalized_actions.append(action_dict)
+    
+    return normalized_actions
+
 def create_workflow(db: Session, workflow: WorkflowCreate, created_by: str) -> Workflow:
     """Create a new workflow."""
     db_workflow = Workflow(
@@ -20,7 +39,7 @@ def create_workflow(db: Session, workflow: WorkflowCreate, created_by: str) -> W
         status=workflow.status,
         rules=[rule.dict() for rule in workflow.rules],
         rule_logic=workflow.rule_logic,
-        actions=[action.dict() for action in workflow.actions],
+        actions=_normalize_workflow_actions(workflow.actions),
         enabled=workflow.enabled,
         trigger_on_ingest=workflow.trigger_on_ingest,
         trigger_on_schedule=workflow.trigger_on_schedule,
@@ -71,7 +90,7 @@ def update_workflow(
     if 'rules' in update_data:
         update_data['rules'] = [rule.dict() for rule in workflow_update.rules]
     if 'actions' in update_data:
-        update_data['actions'] = [action.dict() for action in workflow_update.actions]
+        update_data['actions'] = _normalize_workflow_actions(workflow_update.actions)
     
     update_data['updated_by'] = updated_by
     update_data['updated_at'] = datetime.utcnow()

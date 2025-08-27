@@ -270,6 +270,43 @@ class WorkflowEngine:
                 "error": str(e)
             }
     
+    def _resolve_connector_id(self, action_type: str, provided_connector_id: int = None) -> int:
+        """
+        Resolve the connector ID for an action type.
+        If provided_connector_id is valid, use it. Otherwise, find the first enabled connector of the required type.
+        """
+        # If a connector ID is provided and it's not 0, try to use it
+        if provided_connector_id and provided_connector_id != 0:
+            connector = self.db.query(ConnectorConfig).filter(
+                ConnectorConfig.id == provided_connector_id,
+                ConnectorConfig.enabled == True
+            ).first()
+            if connector:
+                return provided_connector_id
+        
+        # Map action types to connector types
+        action_to_connector_map = {
+            "thehive": "THEHIVE",
+            "email": "EMAIL", 
+            "servicenow": "SERVICENOW"
+        }
+        
+        connector_type = action_to_connector_map.get(action_type.lower())
+        if not connector_type:
+            raise ValueError(f"Unknown action type: {action_type}")
+        
+        # Find the first enabled connector of the required type
+        connector = self.db.query(ConnectorConfig).filter(
+            ConnectorConfig.connector_type == connector_type,
+            ConnectorConfig.enabled == True
+        ).first()
+        
+        if not connector:
+            raise ValueError(f"No enabled connector found for type: {connector_type}")
+        
+        logger.info(f"Auto-resolved connector ID {connector.id} for action type '{action_type}'")
+        return connector.id
+
     async def execute_action(
         self, 
         action: WorkflowAction, 
@@ -299,13 +336,19 @@ class WorkflowEngine:
         self.db.commit()
         
         try:
+            # Resolve connector ID dynamically
+            resolved_connector_id = self._resolve_connector_id(
+                action.type, 
+                getattr(action.config, 'connector_id', None)
+            )
+            
             # Get connector configuration
             connector_config = self.db.query(ConnectorConfig).filter(
-                ConnectorConfig.id == action.config.connector_id
+                ConnectorConfig.id == resolved_connector_id
             ).first()
             
             if not connector_config or not connector_config.enabled:
-                raise ValueError(f"Connector {action.config.connector_id} not found or disabled")
+                raise ValueError(f"Connector {resolved_connector_id} not found or disabled")
             
             # Create connector instance
             connector = ConnectorFactory.create_connector(
