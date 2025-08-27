@@ -12,6 +12,7 @@ from backend.crud import workflow as crud_workflow
 from backend.core.workflow_engine import WorkflowEngine
 from backend.crud.vulnerability import get_vulnerability_by_id
 from backend.core.dependencies import get_opensearch_client
+from backend.core.task_queue import WorkflowQueue
 from opensearchpy import OpenSearch
 
 router = APIRouter()
@@ -251,3 +252,73 @@ async def get_workflow_statistics(
     """Get workflow statistics."""
     stats = crud_workflow.get_workflow_stats(db=db)
     return stats
+
+@router.post("/{workflow_id}/queue")
+async def queue_workflow_execution(
+    workflow_id: int,
+    *,
+    db: Session = Depends(get_db),
+    opensearch_client: OpenSearch = Depends(get_opensearch_client),
+    test_request: WorkflowTestRequest,
+    priority: int = 5,
+    current_user: schemas_user.User = Depends(get_current_user)
+):
+    """Queue a workflow for asynchronous execution."""
+    # Get workflow
+    workflow = crud_workflow.get_workflow(db=db, workflow_id=workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    # Get vulnerability data
+    vulnerability_data = get_vulnerability_by_id(opensearch_client, test_request.vulnerability_id)
+    if not vulnerability_data:
+        raise HTTPException(status_code=404, detail="Vulnerability not found")
+    
+    # Queue workflow
+    queue = WorkflowQueue()
+    task_id = queue.enqueue_workflow(
+        workflow_id=workflow_id,
+        vulnerability_data=vulnerability_data,
+        trigger_type="manual",
+        priority=priority
+    )
+    
+    return {
+        "message": "Workflow queued successfully",
+        "task_id": task_id,
+        "workflow_id": workflow_id,
+        "priority": priority
+    }
+
+@router.get("/queue/stats")
+async def get_queue_statistics(
+    current_user: schemas_user.User = Depends(get_current_user)
+):
+    """Get queue statistics."""
+    queue = WorkflowQueue()
+    stats = queue.get_queue_stats()
+    return stats
+
+@router.get("/queue/task/{task_id}")
+async def get_task_status(
+    task_id: str,
+    current_user: schemas_user.User = Depends(get_current_user)
+):
+    """Get the status of a queued task."""
+    queue = WorkflowQueue()
+    status = queue.get_task_status(task_id)
+    return status
+
+@router.delete("/queue/task/{task_id}")
+async def cancel_task(
+    task_id: str,
+    current_user: schemas_user.User = Depends(get_current_user)
+):
+    """Cancel a queued task."""
+    queue = WorkflowQueue()
+    success = queue.cancel_task(task_id)
+    
+    if success:
+        return {"message": "Task cancelled successfully"}
+    else:
+        raise HTTPException(status_code=400, detail="Failed to cancel task")

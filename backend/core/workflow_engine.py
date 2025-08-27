@@ -9,6 +9,7 @@ from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, Conn
 from backend.core.rules_engine import RulesEngine
 from backend.core.connectors.factory import ConnectorFactory
 from backend.schemas.workflow import RuleCondition, WorkflowAction
+from backend.core.task_queue import WorkflowQueue
 import hashlib
 import json
 
@@ -19,19 +20,22 @@ class WorkflowEngine:
     Main workflow execution engine.
     """
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, use_queue: bool = True):
         self.db = db
         self.rules_engine = RulesEngine()
+        self.use_queue = use_queue
+        self.queue = WorkflowQueue() if use_queue else None
     
-    async def process_vulnerability_ingest(self, vulnerability_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def process_vulnerability_ingest(self, vulnerability_data: Dict[str, Any], use_queue: bool = None) -> List[Dict[str, Any]]:
         """
         Process vulnerability ingest and trigger matching workflows.
         
         Args:
             vulnerability_data: Vulnerability data from NVD
+            use_queue: Override instance queue setting
             
         Returns:
-            List of execution results
+            List of execution results or task IDs if queued
         """
         try:
             cve_id = vulnerability_data.get("id", "unknown")
@@ -46,26 +50,62 @@ class WorkflowEngine:
                 )
             ).all()
             
-            execution_results = []
+            should_use_queue = use_queue if use_queue is not None else self.use_queue
             
-            for workflow in workflows:
-                try:
-                    result = await self.execute_workflow(
-                        workflow, 
-                        vulnerability_data, 
-                        trigger_type="ingest"
-                    )
-                    execution_results.append(result)
-                    
-                except Exception as e:
-                    logger.error(f"Error executing workflow {workflow.id} for {cve_id}: {e}")
-                    execution_results.append({
-                        "workflow_id": workflow.id,
-                        "success": False,
-                        "error": str(e)
-                    })
-            
-            return execution_results
+            if should_use_queue and self.queue:
+                # Queue workflows for asynchronous execution
+                execution_results = []
+                for workflow in workflows:
+                    try:
+                        # Determine priority based on CVSS score
+                        cvss_score = vulnerability_data.get("baseScore", 0)
+                        priority = min(9, max(1, int(cvss_score)))
+                        
+                        task_id = self.queue.enqueue_workflow(
+                            workflow_id=workflow.id,
+                            vulnerability_data=vulnerability_data,
+                            trigger_type="ingest",
+                            priority=priority
+                        )
+                        
+                        execution_results.append({
+                            "workflow_id": workflow.id,
+                            "task_id": task_id,
+                            "queued": True,
+                            "priority": priority
+                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Error queuing workflow {workflow.id} for {cve_id}: {e}")
+                        execution_results.append({
+                            "workflow_id": workflow.id,
+                            "success": False,
+                            "error": str(e)
+                        })
+                
+                return execution_results
+            else:
+                # Execute workflows synchronously (legacy mode)
+                execution_results = []
+                
+                for workflow in workflows:
+                    try:
+                        result = await self.execute_workflow(
+                            workflow,
+                            vulnerability_data,
+                            trigger_type="ingest"
+                        )
+                        execution_results.append(result)
+                        
+                    except Exception as e:
+                        logger.error(f"Error executing workflow {workflow.id} for {cve_id}: {e}")
+                        execution_results.append({
+                            "workflow_id": workflow.id,
+                            "success": False,
+                            "error": str(e)
+                        })
+                
+                return execution_results
             
         except Exception as e:
             logger.error(f"Error processing vulnerability ingest: {e}")

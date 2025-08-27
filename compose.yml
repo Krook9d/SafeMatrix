@@ -63,6 +63,60 @@ services:
       - ./postfix/logs:/var/log
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_queue
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.worker
+    depends_on:
+      - redis
+      - postgres
+      - opensearch
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/main_db
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - SECRET_KEY=your-secret-key-here-change-in-production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    working_dir: /app/backend
+    command: celery -A core.task_queue.celery_app worker --loglevel=info --queues=workflows,batch_processing
+
+  celery-flower:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.worker
+    depends_on:
+      - redis
+      - celery-worker
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/main_db
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - SECRET_KEY=your-secret-key-here-change-in-production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    working_dir: /app/backend
+    command: celery -A core.task_queue.celery_app flower --port=5555
+
 volumes:
   postgres_data:
   opensearch_data:
+  redis_data:

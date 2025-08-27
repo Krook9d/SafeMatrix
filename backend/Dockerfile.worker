@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY backend/ .
+
+# Set environment variables
+ENV PYTHONPATH=/app:/app/backend
+ENV PYTHONUNBUFFERED=1
+
+# Create __init__.py files to make Python recognize directories as modules
+RUN touch /app/__init__.py
+RUN touch /app/backend/__init__.py
+
+# Default command (can be overridden in docker-compose)
+CMD ["celery", "-A", "core.task_queue.celery_app", "worker", "--loglevel=info"]
