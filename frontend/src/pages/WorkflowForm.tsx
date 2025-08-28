@@ -196,10 +196,13 @@ const WorkflowForm: React.FC = () => {
   };
 
   const getDefaultActionConfig = (type: string): any => {
+    const availableConnector = connectors.find(c => c.connector_type === type.toUpperCase() && c.enabled);
+    const defaultConnectorId = availableConnector ? availableConnector.id : 0;
+    
     switch (type) {
       case 'email':
         return {
-          connector_id: 0,
+          connector_id: defaultConnectorId,
           to: [],
           subject: 'Security Alert: {{cve_id}} - {{severity}} Vulnerability Detected',
           body: `A new {{severity}} vulnerability has been detected:
@@ -213,7 +216,7 @@ Please review and take appropriate action.`
         };
       case 'thehive':
         return {
-          connector_id: 0,
+          connector_id: defaultConnectorId,
           title: 'Security Vulnerability: {{cve_id}}',
           description: `Vulnerability Details:
 - CVE ID: {{cve_id}}
@@ -227,7 +230,7 @@ Please review and take appropriate action.`
         };
       case 'servicenow':
         return {
-          connector_id: 0,
+          connector_id: defaultConnectorId,
           short_description: 'Vulnerability Alert: {{cve_id}}',
           description: `A {{severity}} vulnerability has been detected:
 
@@ -457,6 +460,7 @@ Affected Products: {{affected_products}}`,
               variant="outlined"
               onClick={() => addAction('email')}
               sx={{ mr: 1 }}
+              disabled={!connectors.find(c => c.connector_type === 'EMAIL' && c.enabled)}
             >
               Add Email
             </Button>
@@ -464,12 +468,14 @@ Affected Products: {{affected_products}}`,
               variant="outlined"
               onClick={() => addAction('thehive')}
               sx={{ mr: 1 }}
+              disabled={!connectors.find(c => c.connector_type === 'THEHIVE' && c.enabled)}
             >
               Add TheHive
             </Button>
             <Button
               variant="outlined"
               onClick={() => addAction('servicenow')}
+              disabled={!connectors.find(c => c.connector_type === 'SERVICENOW' && c.enabled)}
             >
               Add ServiceNow
             </Button>
@@ -518,21 +524,28 @@ Affected Products: {{affected_products}}`,
     return (
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <FormControl fullWidth>
-            <InputLabel>Connector</InputLabel>
+          <FormControl fullWidth required>
+            <InputLabel>Connector *</InputLabel>
             <Select
               value={action.config.connector_id || ''}
-              label="Connector"
+              label="Connector *"
               onChange={(e) => updateAction(index, {
                 ...action,
                 config: { ...action.config, connector_id: e.target.value as number }
               })}
+              error={!action.config.connector_id || action.config.connector_id === 0}
             >
-              {actionConnectors.map((connector) => (
-                <MenuItem key={connector.id} value={connector.id}>
-                  {connector.name}
+              {actionConnectors.length === 0 ? (
+                <MenuItem disabled>
+                  No {action.type} connectors available
                 </MenuItem>
-              ))}
+              ) : (
+                actionConnectors.map((connector) => (
+                  <MenuItem key={connector.id} value={connector.id}>
+                    {connector.name} {connector.test_status === 'success' ? '✅' : '⚠️'}
+                  </MenuItem>
+                ))
+              )}
             </Select>
           </FormControl>
         </Grid>

@@ -513,9 +513,15 @@ class WorkflowEngine:
                 try:
                     logger.info(f"Executing test action {i}: {action.type}")
                     
+                    # Resolve connector ID dynamically
+                    resolved_connector_id = self._resolve_connector_id(
+                        action.type,
+                        getattr(action.config, 'connector_id', None)
+                    )
+                    
                     # Get connector configuration
                     connector_config = self.db.query(ConnectorConfig).filter(
-                        ConnectorConfig.id == action.config.connector_id
+                        ConnectorConfig.id == resolved_connector_id
                     ).first()
                     
                     if not connector_config or not connector_config.enabled:
@@ -523,7 +529,7 @@ class WorkflowEngine:
                             "action_type": action.type,
                             "action_index": i,
                             "success": False,
-                            "message": f"Connector {action.config.connector_id} not found or disabled"
+                            "message": f"Connector {resolved_connector_id} not found or disabled"
                         })
                         continue
                     
