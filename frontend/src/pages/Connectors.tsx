@@ -60,6 +60,8 @@ const Connectors: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingConnector, setEditingConnector] = useState<ConnectorConfig | null>(null);
   const [testResults, setTestResults] = useState<{ [key: number]: any }>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [connectorToDelete, setConnectorToDelete] = useState<ConnectorConfig | null>(null);
   
   const theme = useTheme();
 
@@ -131,15 +133,22 @@ const Connectors: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (connectorId: number) => {
-    if (window.confirm('Are you sure you want to delete this connector?')) {
-      try {
-        await connectorAPI.delete(connectorId);
-        fetchConnectors();
-      } catch (err: any) {
-        console.error('Error deleting connector:', err);
-        setError('Failed to delete connector');
-      }
+  const handleDelete = (connector: ConnectorConfig) => {
+    setConnectorToDelete(connector);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!connectorToDelete) return;
+
+    try {
+      await connectorAPI.delete(connectorToDelete.id);
+      setConnectors(connectors.filter(c => c.id !== connectorToDelete.id));
+      setDeleteDialogOpen(false);
+      setConnectorToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting connector:', err);
+      setError('Failed to delete connector');
     }
   };
 
@@ -498,14 +507,14 @@ const Connectors: React.FC = () => {
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={() => handleEdit(connector)}
+                          onClick={() => handleEdit(connector.id)}
                           color="primary"
                         >
                           <Edit />
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(connector.id)}
+                          onClick={() => handleDelete(connector)}
                           color="error"
                         >
                           <Delete />
@@ -599,6 +608,23 @@ const Connectors: React.FC = () => {
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSave} variant="contained">
             {editingConnector ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Connector</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the connector "{connectorToDelete?.name}"?
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
