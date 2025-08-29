@@ -38,12 +38,12 @@ import {
   CheckCircle,
   Error,
   Settings,
-  Email,
-  Security,
-  Business,
 } from '@mui/icons-material';
 import { connectorAPI } from '../services/api';
 import type { ConnectorConfig, ConnectorConfigCreate, ConnectorType } from '../services/api';
+import TheHiveIcon from '../components/TheHiveIcon';
+import EmailIcon from '../components/EmailIcon';
+import ServiceNowIcon from '../components/ServiceNowIcon';
 
 // Type for form data that allows empty connector type
 interface ConnectorFormData {
@@ -168,11 +168,11 @@ const Connectors: React.FC = () => {
   const getConnectorIcon = (type: ConnectorType) => {
     switch (type) {
       case 'EMAIL':
-        return <Email />;
+        return <EmailIcon width={24} height={24} />;
       case 'THEHIVE':
-        return <Security />;
+        return <TheHiveIcon width={24} height={24} />;
       case 'SERVICENOW':
-        return <Business />;
+        return <ServiceNowIcon width={24} height={24} />;
       default:
         return <Settings />;
     }
