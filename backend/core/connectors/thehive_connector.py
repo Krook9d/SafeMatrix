@@ -44,12 +44,12 @@ class TheHiveConnector(BaseConnector):
                 'Content-Type': 'application/json'
             }
             
-            url = f"{self.config['url'].rstrip('/')}/api/case"
+            url = f"{self._resolve_url(self.config['url'])}/api/case"
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url, 
-                    json=case_data, 
+                    url,
+                    json=case_data,
                     headers=headers,
                     ssl=self.config.get('verify_ssl', True)
                 ) as response:
@@ -86,11 +86,11 @@ class TheHiveConnector(BaseConnector):
                 'Content-Type': 'application/json'
             }
             
-            url = f"{self.config['url'].rstrip('/')}/api/status"
+            url = f"{self._resolve_url(self.config['url'])}/api/status"
             
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    url, 
+                    url,
                     headers=headers,
                     ssl=self.config.get('verify_ssl', True)
                 ) as response:
@@ -110,3 +110,28 @@ class TheHiveConnector(BaseConnector):
                 "success": False,
                 "message": f"TheHive connection test failed: {str(e)}"
             }
+    
+    def _resolve_url(self, configured_url: str) -> str:
+        """
+        Resolve URL for Docker environment compatibility.
+        Convert localhost/127.0.0.1 references to host.docker.internal when running in Docker.
+        """
+        import os
+        
+        # Check if we're running in a Docker environment (typical indicators)
+        is_docker = (
+            os.path.exists('/.dockerenv') or
+            os.environ.get('DOCKER_CONTAINER') == 'true' or
+            os.environ.get('PYTHONPATH') == '/app'  # Based on our compose.yml
+        )
+        
+        if is_docker:
+            url = configured_url.rstrip('/')
+            # Replace localhost and 127.0.0.1 with host.docker.internal for Docker networking
+            if '://localhost:' in url or '://127.0.0.1:' in url:
+                url = url.replace('://localhost:', '://host.docker.internal:')
+                url = url.replace('://127.0.0.1:', '://host.docker.internal:')
+                self.logger.info(f"Docker environment detected, resolved URL from {configured_url} to {url}")
+                return url
+        
+        return configured_url.rstrip('/')

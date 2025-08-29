@@ -41,7 +41,8 @@ class EmailConnector(BaseConnector):
             # Send email
             context_manager = ssl.create_default_context()
             
-            with smtplib.SMTP(self.config['smtp_host'], self.config['smtp_port']) as server:
+            smtp_host = self._resolve_host(self.config['smtp_host'])
+            with smtplib.SMTP(smtp_host, self.config['smtp_port']) as server:
                 if self.config.get('use_tls', True):
                     server.starttls(context=context_manager)
                 
@@ -91,7 +92,8 @@ class EmailConnector(BaseConnector):
             # Send email
             context_manager = ssl.create_default_context()
             
-            with smtplib.SMTP(self.config['smtp_host'], self.config['smtp_port']) as server:
+            smtp_host = self._resolve_host(self.config['smtp_host'])
+            with smtplib.SMTP(smtp_host, self.config['smtp_port']) as server:
                 if self.config.get('use_tls', False):
                     server.starttls(context=context_manager)
                 
@@ -111,3 +113,25 @@ class EmailConnector(BaseConnector):
                 "success": False,
                 "message": f"Email test failed: {str(e)}"
             }
+    
+    def _resolve_host(self, configured_host: str) -> str:
+        """
+        Resolve host for Docker environment compatibility.
+        Convert localhost/127.0.0.1 references to host.docker.internal when running in Docker.
+        """
+        import os
+        
+        # Check if we're running in a Docker environment
+        is_docker = (
+            os.path.exists('/.dockerenv') or
+            os.environ.get('DOCKER_CONTAINER') == 'true' or
+            os.environ.get('PYTHONPATH') == '/app'
+        )
+        
+        if is_docker:
+            if configured_host in ('localhost', '127.0.0.1'):
+                resolved_host = 'host.docker.internal'
+                self.logger.info(f"Docker environment detected, resolved host from {configured_host} to {resolved_host}")
+                return resolved_host
+        
+        return configured_host

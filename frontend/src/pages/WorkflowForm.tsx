@@ -519,7 +519,7 @@ Affected Products: {{affected_products}}`,
   );
 
   const renderActionConfig = (action: WorkflowAction, index: number) => {
-    const actionConnectors = connectors.filter(c => c.connector_type === action.type);
+    const actionConnectors = connectors.filter(c => c.connector_type === action.type.toUpperCase());
 
     return (
       <Grid container spacing={2}>
