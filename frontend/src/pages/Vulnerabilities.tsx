@@ -357,8 +357,9 @@ const Vulnerabilities: React.FC = () => {
           <Grow in timeout={800}>
             <Card className="stats-card">
               <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
                   <Box>
+
                     <Typography variant="h6" sx={{ opacity: 0.8, mb: 1 }}>
                       Total
                     </Typography>
@@ -369,12 +370,14 @@ const Vulnerabilities: React.FC = () => {
                   <Avatar sx={{ 
                     bgcolor: theme.palette.primary.main, 
                     width: 50, 
-                    height: 50
+                    height: 50,
+                    ml: 'auto'
                   }}>
                     <Shield />
                   </Avatar>
                 </Box>
               </CardContent>
+
             </Card>
           </Grow>
         </Grid>
@@ -383,7 +386,7 @@ const Vulnerabilities: React.FC = () => {
           <Grow in timeout={1000}>
             <Card className="stats-card">
               <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
                   <Box>
                     <Typography variant="h6" sx={{ opacity: 0.8, mb: 1 }}>
                       Critical
@@ -395,7 +398,8 @@ const Vulnerabilities: React.FC = () => {
                   <Avatar sx={{ 
                     bgcolor: theme.palette.error.main, 
                     width: 50, 
-                    height: 50
+                    height: 50,
+                    ml: 'auto'
                   }}>
                     <BugReport />
                   </Avatar>
@@ -409,7 +413,7 @@ const Vulnerabilities: React.FC = () => {
           <Grow in timeout={1200}>
             <Card className="stats-card">
               <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
                   <Box>
                     <Typography variant="h6" sx={{ opacity: 0.8, mb: 1 }}>
                       High
@@ -421,7 +425,8 @@ const Vulnerabilities: React.FC = () => {
                   <Avatar sx={{ 
                     bgcolor: theme.palette.warning.main, 
                     width: 50, 
-                    height: 50
+                    height: 50,
+                    ml: 'auto'
                   }}>
                     <Warning />
                   </Avatar>
@@ -435,7 +440,7 @@ const Vulnerabilities: React.FC = () => {
           <Grow in timeout={1400}>
             <Card className="stats-card">
               <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
                   <Box>
                     <Typography variant="h6" sx={{ opacity: 0.8, mb: 1 }}>
                       Current Page
@@ -447,7 +452,8 @@ const Vulnerabilities: React.FC = () => {
                   <Avatar sx={{ 
                     bgcolor: theme.palette.info.main, 
                     width: 50, 
-                    height: 50
+                    height: 50,
+                    ml: 'auto'
                   }}>
                     <TrendingUp />
                   </Avatar>
