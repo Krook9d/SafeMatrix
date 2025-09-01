@@ -30,9 +30,11 @@ import {
   Code,
   AccountTree,
   Settings,
+  Description,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../services/api';
 
 const drawerWidth = 240;
 
@@ -55,7 +57,7 @@ const navigationItems: NavigationItem[] = [
 const Layout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,7 +90,7 @@ const Layout: React.FC = () => {
   };
 
   const drawer = (
-    <div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar>
         <Typography variant="h6" noWrap component="div" color="primary">
           SafeMatrix
@@ -101,6 +103,11 @@ const Layout: React.FC = () => {
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => handleNavigation(item.path)}
+              sx={{
+                '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                '&.Mui-selected .MuiListItemIcon-root': { color: 'primary.main' },
+                '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+              }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -108,7 +115,23 @@ const Layout: React.FC = () => {
           </ListItem>
         ))}
       </List>
-    </div>
+      <Box sx={{ mt: 'auto' }}>
+        <Divider />
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton
+              component="a"
+              href={`${API_BASE_URL}/docs`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ListItemIcon sx={{ color: 'text.secondary' }}><Description /></ListItemIcon>
+              <ListItemText primary="Documentation" />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Box>
+    </Box>
   );
 
   return (
