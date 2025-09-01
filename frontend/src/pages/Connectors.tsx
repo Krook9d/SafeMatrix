@@ -559,7 +559,7 @@ const Connectors: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={5}>
               <TextField
                 fullWidth
                 label="Connector Name"
@@ -567,8 +567,8 @@ const Connectors: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth sx={{ minWidth: 220 }}>
                 <InputLabel>Connector Type</InputLabel>
                 <Select
                   value={formData.connector_type}
@@ -578,6 +578,9 @@ const Connectors: React.FC = () => {
                     connector_type: e.target.value as ConnectorType,
                     config: {} // Reset config when type changes
                   })}
+                  fullWidth
+                  sx={{ '& .MuiSelect-select': { whiteSpace: 'normal', textOverflow: 'unset' } }}
+                  MenuProps={{ PaperProps: { sx: { maxWidth: 'none' } } }}
                 >
                   <MenuItem value="EMAIL">Email</MenuItem>
                   <MenuItem value="THEHIVE">TheHive</MenuItem>
@@ -585,7 +588,7 @@ const Connectors: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
               <FormControlLabel
                 control={
                   <Switch
