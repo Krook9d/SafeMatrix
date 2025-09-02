@@ -10,6 +10,11 @@ from backend.models.workflow import (
 from backend.schemas.workflow import (
     WorkflowCreate, WorkflowUpdate, ConnectorConfigCreate, ConnectorConfigUpdate
 )
+from backend.core.vault import (
+    split_config_and_credentials,
+    encrypt_credentials,
+)
+from backend.core.config import settings
 
 # Workflow CRUD operations
 def _normalize_workflow_actions(actions: List[Any]) -> List[Dict[str, Any]]:
@@ -150,10 +155,17 @@ def create_connector_config(
     created_by: str
 ) -> ConnectorConfig:
     """Create a new connector configuration."""
+    # Split public config and secrets, then encrypt secrets
+    public_cfg, secrets = split_config_and_credentials(
+        str(connector.connector_type), connector.config.dict()
+    )
+    encrypted = encrypt_credentials(secrets)
+
     db_connector = ConnectorConfig(
         name=connector.name,
         connector_type=connector.connector_type,
-        config=connector.config.dict(),
+        config=public_cfg,
+        credentials=encrypted,
         enabled=connector.enabled,
         created_by=created_by
     )
@@ -195,10 +207,26 @@ def update_connector_config(
         return None
     
     update_data = connector_update.dict(exclude_unset=True)
-    
+    # If config provided, split and merge secrets
     if 'config' in update_data:
-        update_data['config'] = connector_update.config.dict()
-    
+        full_cfg = connector_update.config.dict()
+        public_cfg, new_secrets = split_config_and_credentials(
+            str(db_connector.connector_type), full_cfg
+        )
+        # Merge public config directly
+        update_data['config'] = public_cfg
+        # Merge secrets with existing ones (if any)
+        if new_secrets:
+            from backend.core.crypto import decrypt_dict  # local import to avoid circular
+            existing = {}
+            if db_connector.credentials:
+                try:
+                    existing = decrypt_dict(db_connector.credentials, settings.SECRET_KEY)
+                except Exception:
+                    existing = {}
+            existing.update({k: v for k, v in new_secrets.items() if v not in (None, "")})
+            update_data['credentials'] = encrypt_credentials(existing)
+
     update_data['updated_at'] = datetime.utcnow()
     
     for field, value in update_data.items():

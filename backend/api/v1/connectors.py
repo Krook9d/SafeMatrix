@@ -118,11 +118,17 @@ async def test_connector(
         print(f"Debug: Testing connector {connector_id} of type {connector_config.connector_type}")
         print(f"Debug: Config: {connector_config.config}")
         
-        # Create connector instance and test
+        # Create connector instance with secrets merged from vault and test
         try:
+            from backend.core.vault import merge_credentials_into_config
+            merged_cfg = merge_credentials_into_config(
+                str(connector_config.connector_type),
+                connector_config.config,
+                connector_config.credentials,
+            )
             connector = ConnectorFactory.create_connector(
                 connector_config.connector_type,
-                connector_config.config
+                merged_cfg,
             )
             print(f"Debug: Created connector instance: {connector}")
         except Exception as e:
