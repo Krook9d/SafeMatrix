@@ -111,131 +111,196 @@ const Dashboard: React.FC = () => {
 
 
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4, width: '100%', maxWidth: 'none' }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Grow in timeout={600}>
-            <Card className="kpi-card" sx={{
-              height: '100%',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              color: '#ffffff'
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
-                      Total Hosts
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                      {stats ? stats.total_hosts : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: 60,
-                    height: 60,
-                    color: '#ffffff'
-                  }}>
-                    <Computer sx={{ fontSize: 30 }} />
-                  </Avatar>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 'none',
+          mb: 4,
+          display: 'grid',
+          // Keep 6 columns in a single row and let cards shrink more on smaller screens
+          gridTemplateColumns: 'repeat(6, minmax(120px, 1fr))',
+          gap: 2,
+          alignItems: 'stretch'
+        }}
+      >
+        <Grow in timeout={600}>
+          <Card className="kpi-card" sx={{
+            height: '100%',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    Total Hosts
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? stats.total_hosts : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <Computer sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Grow in timeout={800}>
-            <Card className="kpi-card" sx={{
-              height: '100%',
-              background: `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
-              color: '#ffffff'
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
-                      Software
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                      {stats ? stats.total_software.toLocaleString() : <Skeleton width={80} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: 60,
-                    height: 60,
-                    color: '#ffffff'
-                  }}>
-                    <Assessment sx={{ fontSize: 30 }} />
-                  </Avatar>
+        <Grow in timeout={800}>
+          <Card className="kpi-card" sx={{
+            height: '100%',
+            // Distinct purple gradient for Software
+            background: 'linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%)',
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    Software
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? stats.total_software.toLocaleString() : <Skeleton width={80} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <Assessment sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Grow in timeout={1000}>
-            <Card className="kpi-card" sx={{
-              height: '100%',
-              background: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
-              color: '#ffffff'
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
-                      Vulnerabilities
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                      {stats ? stats.total_vulnerabilities.toLocaleString() : <Skeleton width={80} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: 60,
-                    height: 60,
-                    color: '#ffffff'
-                  }}>
-                    <Shield sx={{ fontSize: 30 }} />
-                  </Avatar>
+        <Grow in timeout={1000}>
+          <Card className="kpi-card" sx={{
+            height: '100%',
+            // Orange gradient for total Vulnerabilities
+            background: 'linear-gradient(135deg, #f57c00 0%, #ef6c00 100%)',
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    Vulnerabilities
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? stats.total_vulnerabilities.toLocaleString() : <Skeleton width={80} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <Shield sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Grow in timeout={1200}>
-            <Card className={`kpi-card ${stats?.critical_vulnerabilities && stats.critical_vulnerabilities > 0 ? 'critical-card' : ''}`} sx={{
-              height: '100%',
-              background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
-              color: '#ffffff'
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
-                      Critical
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                      {stats ? stats.critical_vulnerabilities.toLocaleString() : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: 60,
-                    height: 60,
-                    color: '#ffffff'
-                  }}>
-                    <BugReport sx={{ fontSize: 30 }} />
-                  </Avatar>
+        <Grow in timeout={1200}>
+          <Card className={`kpi-card ${stats?.critical_vulnerabilities && stats.critical_vulnerabilities > 0 ? 'critical-card' : ''}`} sx={{
+            height: '100%',
+            background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    Critical
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? stats.critical_vulnerabilities.toLocaleString() : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
-      </Grid>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <BugReport sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
+
+        <Grow in timeout={1400}>
+          <Card className="kpi-card" sx={{
+            height: '100%',
+            // Deep orange gradient for High to differ from total Vulnerabilities
+            background: 'linear-gradient(135deg, #ff7043 0%, #f4511e 100%)',
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    High
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? (stats.vulnerabilities_by_severity?.['HIGH'] ?? 0).toLocaleString() : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
+                </Box>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <Warning sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
+
+        <Grow in timeout={1600}>
+          <Card className="kpi-card" sx={{
+            height: '100%',
+            // Teal gradient for Medium distinct from others
+            background: 'linear-gradient(135deg, #00897b 0%, #00695c 100%)',
+            color: '#ffffff'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                    Medium
+                  </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 700, fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)' }}>
+                    {stats ? (stats.vulnerabilities_by_severity?.['MEDIUM'] ?? 0).toLocaleString() : <Skeleton width={60} sx={{ bgcolor: 'rgba(255, 255, 255, 0.3)' }} />}
+                  </Typography>
+                </Box>
+                <Avatar sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: 60,
+                  height: 60,
+                  color: '#ffffff'
+                }}>
+                  <Security sx={{ fontSize: 30 }} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grow>
+      </Box>
 
       {/* Charts Section */}
       <Grid container spacing={3} sx={{ mb: 4, width: '100%', maxWidth: 'none' }}>
