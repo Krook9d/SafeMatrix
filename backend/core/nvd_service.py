@@ -62,6 +62,7 @@ class NVDService:
         """
         start_index = 0
         total_results = 1  # Initialize to a non-zero value
+        rejected_skipped_total = 0
 
         while start_index < total_results:
             data = self.fetch_vulnerabilities_page(start_index)
@@ -75,8 +76,20 @@ class NVDService:
             
             logger.info(f"Successfully fetched {len(vulnerabilities)} vulnerabilities. Total results: {total_results}.")
 
+            rejected_skipped_page = 0
             for cve_item in vulnerabilities:
-                yield cve_item['cve']
+                cve = cve_item['cve']
+                status = str(cve.get('vulnStatus', '')).strip().lower()
+                if status == 'rejected':
+                    rejected_skipped_page += 1
+                    continue
+                yield cve
+
+            if rejected_skipped_page:
+                rejected_skipped_total += rejected_skipped_page
+                logger.info(
+                    f"Skipped {rejected_skipped_page} rejected CVEs on this page (cumulative skipped: {rejected_skipped_total})."
+                )
 
             start_index += RESULTS_PER_PAGE
             
@@ -91,4 +104,4 @@ class NVDService:
 if __name__ == '__main__':
     service = NVDService()
     for cve in service.sync_all_vulnerabilities():
-        logger.info(f"Processing CVE: {cve['id']}") 
+        logger.info(f"Processing CVE: {cve['id']}")
