@@ -184,6 +184,7 @@ class ServiceNowConnectorConfig(BaseModel):
     username: str = Field(..., description="ServiceNow username")
     password: str = Field(..., description="ServiceNow password")
     table: str = Field(default="incident", description="ServiceNow table name")
+    verify_ssl: bool = Field(default=True, description="Verify SSL certificates when connecting to ServiceNow")
 
 class ConnectorConfigBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Connector name")

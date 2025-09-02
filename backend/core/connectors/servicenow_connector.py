@@ -1,5 +1,7 @@
 import aiohttp
 import base64
+import ssl
+import socket
 from typing import Dict, Any
 from .base import BaseConnector
 
@@ -36,28 +38,43 @@ class ServiceNowConnector(BaseConnector):
             if action_config.get('assignment_group'):
                 incident_data['assignment_group'] = action_config['assignment_group']
             
-            # Prepare authentication
-            auth_string = f"{self.config['username']}:{self.config['password']}"
-            auth_bytes = auth_string.encode('ascii')
-            auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
-            
+            # Prepare authentication and headers
+            auth = aiohttp.BasicAuth(self.config['username'], self.config['password'])
             headers = {
-                'Authorization': f'Basic {auth_b64}',
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'User-Agent': 'SafeMatrix/1.0 (+https://safematrix.local)'
             }
             
             # Send request to ServiceNow
             table = self.config.get('table', 'incident')
             url = f"{self.config['instance_url'].rstrip('/')}/api/now/table/{table}"
             
-            async with aiohttp.ClientSession() as session:
+            # SSL and proxy handling
+            verify_ssl = self.config.get('verify_ssl', True)
+            ssl_context = None
+            if not verify_ssl:
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
+            timeout = aiohttp.ClientTimeout(total=30)
+            connector = aiohttp.TCPConnector(ssl=ssl_context, family=socket.AF_INET)
+
+            async with aiohttp.ClientSession(trust_env=True, timeout=timeout, connector=connector) as session:
                 async with session.post(
                     url, 
                     json=incident_data, 
-                    headers=headers
+                    headers=headers,
+                    auth=auth
                 ) as response:
-                    response_data = await response.json()
+                    # Try parse JSON, else take text for logging
+                    content_type = response.headers.get('Content-Type', '')
+                    if 'application/json' in content_type.lower():
+                        response_data = await response.json()
+                    else:
+                        response_text = await response.text()
+                        response_data = {"raw": response_text}
                     
                     if response.status == 201:
                         result = response_data.get('result', {})
@@ -69,9 +86,11 @@ class ServiceNowConnector(BaseConnector):
                             "response_data": response_data
                         }
                     else:
+                        self.logger.error(f"ServiceNow API error: {response.status} - {response_data}")
                         return {
                             "success": False,
-                            "error": f"ServiceNow API error: {response.status} - {response_data}"
+                            "error": f"ServiceNow API error: {response.status}",
+                            "response_data": response_data
                         }
             
         except Exception as e:
@@ -86,32 +105,41 @@ class ServiceNowConnector(BaseConnector):
         Test ServiceNow configuration.
         """
         try:
-            # Prepare authentication
-            auth_string = f"{self.config['username']}:{self.config['password']}"
-            auth_bytes = auth_string.encode('ascii')
-            auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
-            
+            # Prepare authentication and headers
+            auth = aiohttp.BasicAuth(self.config['username'], self.config['password'])
             headers = {
-                'Authorization': f'Basic {auth_b64}',
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'User-Agent': 'SafeMatrix/1.0 (+https://safematrix.local)'
             }
             
             # Test with a simple query
             table = self.config.get('table', 'incident')
             url = f"{self.config['instance_url'].rstrip('/')}/api/now/table/{table}?sysparm_limit=1"
             
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as response:
+            verify_ssl = self.config.get('verify_ssl', True)
+            ssl_context = None
+            if not verify_ssl:
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
+            timeout = aiohttp.ClientTimeout(total=15)
+            connector = aiohttp.TCPConnector(ssl=ssl_context, family=socket.AF_INET)
+
+            async with aiohttp.ClientSession(trust_env=True, timeout=timeout, connector=connector) as session:
+                async with session.get(url, headers=headers, auth=auth) as response:
                     if response.status == 200:
                         return {
                             "success": True,
                             "message": "ServiceNow connection successful"
                         }
                     else:
+                        text = await response.text()
                         return {
                             "success": False,
-                            "message": f"ServiceNow connection failed: {response.status}"
+                            "message": f"ServiceNow connection failed: {response.status}",
+                            "response_data": text
                         }
             
         except Exception as e:
