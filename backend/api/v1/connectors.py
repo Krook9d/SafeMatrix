@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.core.dependencies import get_db, get_current_user
+from backend.core.dependencies import get_db, get_current_user, require_roles
 from backend.schemas import user as schemas_user
 from backend.schemas.workflow import (
     ConnectorConfig, ConnectorConfigCreate, ConnectorConfigUpdate,
@@ -18,7 +18,7 @@ async def create_connector(
     *,
     db: Session = Depends(get_db),
     connector_in: ConnectorConfigCreate,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Create a new connector configuration."""
     try:
@@ -78,7 +78,7 @@ async def update_connector(
     *,
     db: Session = Depends(get_db),
     connector_in: ConnectorConfigUpdate,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Update a connector configuration."""
     connector = crud_workflow.update_connector_config(
@@ -94,7 +94,7 @@ async def update_connector(
 async def delete_connector(
     connector_id: int,
     db: Session = Depends(get_db),
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Delete a connector configuration."""
     success = crud_workflow.delete_connector_config(db=db, connector_id=connector_id)
@@ -106,7 +106,7 @@ async def delete_connector(
 async def test_connector(
     connector_id: int,
     db: Session = Depends(get_db),
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Test a connector configuration."""
     # Get connector

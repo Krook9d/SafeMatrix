@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.core.dependencies import get_db, get_current_user
+from backend.core.dependencies import get_db, get_current_user, require_roles
 from backend.schemas import user as schemas_user
 from backend.schemas.workflow import (
     Workflow, WorkflowCreate, WorkflowUpdate, WorkflowExecution,
@@ -22,7 +22,7 @@ async def create_workflow(
     *,
     db: Session = Depends(get_db),
     workflow_in: WorkflowCreate,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Create a new workflow."""
     try:
@@ -84,7 +84,7 @@ async def update_workflow(
     *,
     db: Session = Depends(get_db),
     workflow_in: WorkflowUpdate,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Update a workflow."""
     workflow = crud_workflow.update_workflow(
@@ -101,7 +101,7 @@ async def update_workflow(
 async def delete_workflow(
     workflow_id: int,
     db: Session = Depends(get_db),
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Delete a workflow."""
     success = crud_workflow.delete_workflow(db=db, workflow_id=workflow_id)
@@ -116,7 +116,7 @@ async def test_workflow(
     db: Session = Depends(get_db),
     opensearch_client: OpenSearch = Depends(get_opensearch_client),
     test_request: WorkflowTestRequest,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Test a workflow against a specific vulnerability."""
     # Get workflow
@@ -141,7 +141,7 @@ async def test_workflow_with_custom_data(
     *,
     db: Session = Depends(get_db),
     test_data: dict,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Test a workflow with custom vulnerability data."""
     # Get workflow
@@ -162,7 +162,7 @@ async def execute_workflow_manually(
     db: Session = Depends(get_db),
     opensearch_client: OpenSearch = Depends(get_opensearch_client),
     test_request: WorkflowTestRequest,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Manually execute a workflow against a specific vulnerability."""
     # Get workflow
@@ -261,7 +261,7 @@ async def queue_workflow_execution(
     opensearch_client: OpenSearch = Depends(get_opensearch_client),
     test_request: WorkflowTestRequest,
     priority: int = 5,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Queue a workflow for asynchronous execution."""
     # Get workflow
@@ -312,7 +312,7 @@ async def get_task_status(
 @router.delete("/queue/task/{task_id}")
 async def cancel_task(
     task_id: str,
-    current_user: schemas_user.User = Depends(get_current_user)
+    current_user: schemas_user.User = Depends(require_roles("admin", "analyst"))
 ):
     """Cancel a queued task."""
     queue = WorkflowQueue()

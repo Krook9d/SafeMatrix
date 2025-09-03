@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .core.database import engine
+from .core.database import engine, SessionLocal
 from .core.opensearch_client import create_indexes
 from .models import user
 from .models import workflow
@@ -16,10 +16,36 @@ from .api.v1 import dashboard as dashboard_router
 from .api.v1 import opensearch as opensearch_router
 from .api.v1 import workflows as workflows_router
 from .api.v1 import connectors as connectors_router
+from .core.config import settings
+from .crud import user as crud_user
+from .schemas import user as schemas_user
 
 user.Base.metadata.create_all(bind=engine)
 workflow.Base.metadata.create_all(bind=engine)
 create_indexes()
+
+# Bootstrap admin user if configured
+def _bootstrap_admin_user():
+    if not settings.ADMIN_USERNAME or not settings.ADMIN_PASSWORD:
+        return
+    db = SessionLocal()
+    try:
+        existing = crud_user.get_user_by_username(db, settings.ADMIN_USERNAME)
+        if not existing:
+            admin_user = schemas_user.UserCreate(
+                username=settings.ADMIN_USERNAME,
+                password=settings.ADMIN_PASSWORD,
+                role=schemas_user.UserBase.Role.admin,
+            )
+            crud_user.create_user(db, admin_user)
+            print("Bootstrap: admin user created.")
+        else:
+            # Optionally we could ensure role is admin, but avoid mutating silently
+            pass
+    finally:
+        db.close()
+
+_bootstrap_admin_user()
 
 app = FastAPI(
     title="SafeMatrix API",

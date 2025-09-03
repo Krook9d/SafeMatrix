@@ -10,8 +10,6 @@ import {
   Container,
   Avatar,
   CssBaseline,
-  Tab,
-  Tabs,
   Paper,
   Grid,
   Divider,
@@ -21,7 +19,6 @@ import {
 } from '@mui/material';
 import { 
   LockOutlined, 
-  PersonAdd, 
   Security, 
   Shield, 
   BugReport,
@@ -32,50 +29,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`auth-tabpanel-${index}`}
-      aria-labelledby={`auth-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
 const Login: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    setError('');
-    setSuccess('');
-    setUsername('');
-    setPassword('');
-    setConfirmPassword('');
-  };
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,49 +49,7 @@ const Login: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       console.error('Login caught error:', err);
-      setError(
-        err.response?.data?.detail || 
-        'Login error. Please check your credentials.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await authAPI.register({
-        username,
-        password
-      });
-      setSuccess('Account created successfully! You can now sign in.');
-      setTabValue(0); // Switch to login tab
-      setUsername('');
-      setPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(
-        err.response?.data?.detail || 
-        'Registration failed. Please try again.'
-      );
+      setError(err.response?.data?.detail || 'Login error. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -223,195 +143,66 @@ const Login: React.FC = () => {
                   </Typography>
                 </Box>
 
-                <Box sx={{ bgcolor: 'background.paper' }}>
-                  <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    variant="fullWidth"
-                    sx={{
-                      borderBottom: 1,
-                      borderColor: 'divider',
-                      '& .MuiTab-root': {
-                        textTransform: 'none',
-                        fontWeight: 600,
-                      },
-                    }}
-                  >
-                    <Tab
-                      icon={<LockOutlined />}
-                      iconPosition="start"
-                      label="Sign In"
-                      id="auth-tab-0"
-                      aria-controls="auth-tabpanel-0"
+                <Box sx={{ bgcolor: 'background.paper', p: 3 }}>
+                  <Box component="form" onSubmit={handleLogin}>
+                    {error && (
+                      <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                      </Alert>
+                    )}
+
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="login-username"
+                      label="Username"
+                      name="username"
+                      autoComplete="username"
+                      autoFocus
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={loading}
+                      variant="outlined"
                     />
-                    <Tab
-                      icon={<PersonAdd />}
-                      iconPosition="start"
-                      label="Sign Up"
-                      id="auth-tab-1"
-                      aria-controls="auth-tabpanel-1"
+
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      name="password"
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      id="login-password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                      variant="outlined"
+                      InputProps={{
+                        endAdornment: (
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        ),
+                      }}
                     />
-                  </Tabs>
 
-                  {/* Login Tab */}
-                  <TabPanel value={tabValue} index={0}>
-                    <Box component="form" onSubmit={handleLogin}>
-                      {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                          {error}
-                        </Alert>
-                      )}
-                      {success && (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                          {success}
-                        </Alert>
-                      )}
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        id="login-username"
-                        label="Username"
-                        name="username"
-                        autoComplete="username"
-                        autoFocus={tabValue === 0}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        disabled={loading}
-                        variant="outlined"
-                      />
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        name="password"
-                        label="Password"
-                        type={showPassword ? 'text' : 'password'}
-                        id="login-password"
-                        autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={loading}
-                        variant="outlined"
-                        InputProps={{
-                          endAdornment: (
-                            <IconButton
-                              aria-label="toggle password visibility"
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          ),
-                        }}
-                      />
-
-                      <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        sx={{ mt: 3, mb: 2, py: 1.5 }}
-                        disabled={loading || !username || !password}
-                        size="large"
-                      >
-                        {loading ? 'Signing in...' : 'Sign In'}
-                      </Button>
-                    </Box>
-                  </TabPanel>
-
-                  {/* Register Tab */}
-                  <TabPanel value={tabValue} index={1}>
-                    <Box component="form" onSubmit={handleRegister}>
-                      {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                          {error}
-                        </Alert>
-                      )}
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        id="register-username"
-                        label="Username"
-                        name="username"
-                        autoComplete="username"
-                        autoFocus={tabValue === 1}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        disabled={loading}
-                        variant="outlined"
-                        helperText="Choose a unique username"
-                      />
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        name="password"
-                        label="Password"
-                        type={showPassword ? 'text' : 'password'}
-                        id="register-password"
-                        autoComplete="new-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={loading}
-                        variant="outlined"
-                        helperText="Minimum 6 characters"
-                        InputProps={{
-                          endAdornment: (
-                            <IconButton
-                              aria-label="toggle password visibility"
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          ),
-                        }}
-                      />
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        name="confirmPassword"
-                        label="Confirm Password"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        id="register-confirm-password"
-                        autoComplete="new-password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        disabled={loading}
-                        variant="outlined"
-                        helperText="Re-enter your password"
-                        InputProps={{
-                          endAdornment: (
-                            <IconButton
-                              aria-label="toggle confirm password visibility"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              edge="end"
-                            >
-                              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          ),
-                        }}
-                      />
-
-                      <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        sx={{ mt: 3, mb: 2, py: 1.5 }}
-                        disabled={loading || !username || !password || !confirmPassword}
-                        size="large"
-                      >
-                        {loading ? 'Creating Account...' : 'Create Account'}
-                      </Button>
-                    </Box>
-                  </TabPanel>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      sx={{ mt: 3, mb: 2, py: 1.5 }}
+                      disabled={loading || !username || !password}
+                      size="large"
+                    >
+                      {loading ? 'Signing in...' : 'Sign In'}
+                    </Button>
+                  </Box>
                 </Box>
               </Paper>
             </Box>
@@ -422,4 +213,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;

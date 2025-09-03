@@ -46,6 +46,14 @@ export interface User {
   created_at: string;
 }
 
+export type Role = 'admin' | 'analyst' | 'viewer';
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  role?: Role;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -296,23 +304,14 @@ export interface WorkflowTestResult {
   rules_matched: boolean;
   matched_rules: any[];
   actions_to_execute: any[];
-  test_log: any;
 }
 
-// Services API
-
-export interface CreateUserRequest {
-  username: string;
-  password: string;
-}
-
-// Authentication
+// Auth API
 export const authAPI = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
-    
     const response = await apiClient.post<LoginResponse>(
       '/api/v1/login/access-token',
       formData,
@@ -337,6 +336,32 @@ export const authAPI = {
 
   logout: () => {
     localStorage.removeItem('access_token');
+  },
+};
+
+// Users API
+export const usersAPI = {
+  list: async (params?: { skip?: number; limit?: number }): Promise<User[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    const url = searchParams.toString() ? `/api/v1/users/?${searchParams}` : '/api/v1/users/';
+    const response = await apiClient.get<User[]>(url);
+    return response.data;
+  },
+
+  create: async (payload: CreateUserRequest): Promise<User> => {
+    const response = await apiClient.post<User>('/api/v1/users/', payload);
+    return response.data;
+  },
+
+  updateRole: async (username: string, role: Role): Promise<User> => {
+    const response = await apiClient.put<User>(`/api/v1/users/${encodeURIComponent(username)}/role`, { role });
+    return response.data;
+  },
+
+  delete: async (username: string): Promise<void> => {
+    await apiClient.delete(`/api/v1/users/${encodeURIComponent(username)}`);
   },
 };
 

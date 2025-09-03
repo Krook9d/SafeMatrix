@@ -31,6 +31,7 @@ import {
   AccountTree,
   Settings,
   Description,
+  People,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,6 +43,7 @@ interface NavigationItem {
   text: string;
   icon: React.ReactElement;
   path: string;
+  adminOnly?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -52,6 +54,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Workflows', icon: <AccountTree />, path: '/workflows' },
   { text: 'Connectors', icon: <Settings />, path: '/connectors' },
   { text: 'DSL Query', icon: <Code />, path: '/dsl-query' },
+  { text: 'Users', icon: <People />, path: '/admin/users', adminOnly: true },
 ];
 
 const Layout: React.FC = () => {
@@ -98,7 +101,9 @@ const Layout: React.FC = () => {
       </Toolbar>
       <Divider />
       <List>
-        {navigationItems.map((item) => (
+        {navigationItems
+          .filter((item) => !item.adminOnly || user?.role === 'admin')
+          .map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={location.pathname === item.path}
@@ -197,6 +202,10 @@ const Layout: React.FC = () => {
                 {user?.username}
               </MenuItem>
               <Divider />
+              <MenuItem onClick={() => { handleNavigation('/profile'); handleMenuClose(); }}>
+                <AccountCircle sx={{ mr: 1 }} />
+                Profile
+              </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <Logout sx={{ mr: 1 }} />
                 Logout

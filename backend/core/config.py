@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
 
+    # RBAC and user management
+    # If provided, the backend will ensure an admin user exists at startup
+    ADMIN_USERNAME: str | None = Field(default=None, alias='ADMIN_USERNAME')
+    ADMIN_PASSWORD: str | None = Field(default=None, alias='ADMIN_PASSWORD')
+    # Control whether public self-signup is allowed (default: disabled)
+    ALLOW_SELF_SIGNUP: bool = Field(default=False, alias='ALLOW_SELF_SIGNUP')
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
         case_sensitive=True,

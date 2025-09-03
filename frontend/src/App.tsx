@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
@@ -18,6 +19,8 @@ import WorkflowForm from './pages/WorkflowForm';
 import WorkflowExecutions from './pages/WorkflowExecutions';
 import WorkflowTest from './pages/WorkflowTest';
 import Connectors from './pages/Connectors';
+import Profile from './pages/Profile';
+import AdminUsers from './pages/AdminUsers';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -248,6 +251,15 @@ const App: React.FC = () => {
               <Route path="workflows/:id/executions" element={<WorkflowExecutions />} />
               <Route path="workflows/:id/test" element={<WorkflowTest />} />
               <Route path="connectors" element={<Connectors />} />
+              <Route path="profile" element={<Profile />} />
+              <Route
+                path="admin/users"
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
+                  </AdminRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
