@@ -161,3 +161,88 @@ The frontend is built with:
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+---
+
+## User Management
+
+SafeMatrix enforces admin-only provisioning by default. End-users cannot self-register via the UI.
+
+### Roles
+
+- **admin**: Full access. Can manage users (create, update roles, delete), manage connectors, workflows, etc.
+- **analyst**: Read/operate within the platform. No user administration.
+- **viewer**: Read-only access to dashboards and data.
+
+### Provisioning Model
+
+- By default, public signup is disabled. Only admins can create users.
+- Bootstrap an initial admin via environment variables at backend startup.
+
+Environment variables in `backend/.env`:
+
+```
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-strong-password
+ALLOW_SELF_SIGNUP=false
+```
+
+- If `ALLOW_SELF_SIGNUP=true`, the backend permits self-signup but forces every self-created account to role `viewer` regardless of input.
+
+### Frontend Access (Admin Only)
+
+- Log in as an admin and open the admin users page:
+  - Navigation item: `Users` (visible only for admin)
+  - Route: `/admin/users`
+- From this page admins can:
+  - Create a user (username, password, role)
+  - Update a user role
+  - Delete a user
+
+### Authentication
+
+- JWT bearer tokens stored in `localStorage` key `access_token`.
+- `authAPI.getCurrentUser()` resolves the current user and role to drive route guards and navigation.
+
+### API Endpoints (Backend)
+
+All user administration endpoints are admin-only (enforced via `require_roles("admin")`).
+
+- List users:
+  - `GET /api/v1/users/?skip=0&limit=100`
+- Create user:
+  - `POST /api/v1/users/`
+  - Body: `{ "username": "alice", "password": "Secret123!", "role": "analyst" }`
+- Update role:
+  - `PUT /api/v1/users/{username}/role`
+  - Body: `{ "role": "viewer" }`
+- Delete user:
+  - `DELETE /api/v1/users/{username}`
+
+Example cURL (replace token and host):
+
+```bash
+TOKEN="<ADMIN_JWT_TOKEN>"
+
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/v1/users/
+
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"bob","password":"SafePass!2025","role":"viewer"}' \
+  http://127.0.0.1:8000/api/v1/users/
+
+curl -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"analyst"}' \
+  http://127.0.0.1:8000/api/v1/users/bob/role
+
+curl -X DELETE -H "Authorization: Bearer $TOKEN" \
+  http://127.0.0.1:8000/api/v1/users/bob
+```
+
+### Notes
+
+- Frontend login page intentionally has no signup UI when `ALLOW_SELF_SIGNUP=false`.
+- If the Users nav item is not visible after logging in as admin, ensure the token is valid and `/api/v1/users/me/` returns `role: "admin"`.
