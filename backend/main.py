@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
+from datetime import datetime
 
 from .core.database import engine, SessionLocal
 from .core.opensearch_client import create_indexes
@@ -21,6 +24,43 @@ from .api.v1 import audit_logs as audit_logs_router
 from .core.config import settings
 from .crud import user as crud_user
 from .schemas import user as schemas_user
+
+# Configure logging
+LOG_DIR = "logs"
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+log_filename = os.path.join(os.getcwd(), LOG_DIR, f"backend_{datetime.now().strftime('%Y-%m-%d')}.log")
+
+# Create logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Create formatters
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Create file handler
+file_handler = logging.FileHandler(log_filename)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+# Create console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+
+# Add handlers to logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Test logging
+main_logger = logging.getLogger(__name__)
+main_logger.info("Backend starting up - logging configuration initialized")
+main_logger.info(f"Log file path: {log_filename}")
+
+# Also test with root logger
+logging.info("Root logger test - this should appear in file")
+print(f"Log file will be written to: {log_filename}")
 
 user.Base.metadata.create_all(bind=engine)
 workflow.Base.metadata.create_all(bind=engine)

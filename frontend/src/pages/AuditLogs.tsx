@@ -25,6 +25,7 @@ interface AuditLog {
   resource: string;
   details: string;
   ip_address: string;
+  success?: string;
 }
 
 interface AuditLogsResponse {
@@ -73,6 +74,11 @@ const AuditLogs: React.FC = () => {
 
   const getActionColor = (action: string) => {
     switch (action) {
+      case 'INFO': return 'info';
+      case 'WARNING': return 'warning';
+      case 'ERROR': return 'error';
+      case 'CRITICAL': return 'error';
+      case 'DEBUG': return 'default';
       case 'LOGIN': return 'info';
       case 'CREATE': return 'success';
       case 'UPDATE': return 'warning';
@@ -108,10 +114,10 @@ const AuditLogs: React.FC = () => {
   return (
     <Box p={3}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Audit Logs
+        Server Logs
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
-        History of actions performed in the application
+        Backend server logs and system activity
       </Typography>
 
       {error && (
@@ -126,11 +132,11 @@ const AuditLogs: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Date/Time</TableCell>
-                <TableCell>User</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Resource</TableCell>
-                <TableCell>Details</TableCell>
-                <TableCell>IP Address</TableCell>
+                <TableCell>Logger</TableCell>
+                <TableCell>Level</TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell>Message</TableCell>
+                <TableCell>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -155,7 +161,7 @@ const AuditLogs: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {log.resource}
+                      {log.resource || '-'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -165,7 +171,7 @@ const AuditLogs: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontFamily="monospace">
-                      {log.ip_address}
+                      {log.success || log.ip_address || '-'}
                     </Typography>
                   </TableCell>
                 </TableRow>

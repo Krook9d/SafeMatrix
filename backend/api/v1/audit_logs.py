@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import os
+from datetime import datetime
 
 from ...core.dependencies import get_db, get_current_user, require_roles
 from ...schemas.user import User
@@ -16,24 +18,63 @@ async def get_audit_logs_endpoint(
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve audit logs from the backend (admin only)
+    Retrieve server logs from the backend log file (admin only)
     """
     try:
-        logs, total = get_audit_logs(db, skip=offset, limit=limit)
+        log_dir = "logs"
+        log_filename = f"{log_dir}/backend_{datetime.now().strftime('%Y-%m-%d')}.log"
         
-        # Convert to dict format for API response
+        if not os.path.exists(log_filename):
+            return {
+                "logs": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset
+            }
+        
+        # Read the log file
+        with open(log_filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Reverse the lines to show newest first
+        lines = lines[::-1]
+        total = len(lines)
+        
+        # Apply pagination
+        start = offset
+        end = offset + limit
+        paginated_lines = lines[start:end]
+        
+        # Convert lines to log entries
         logs_data = []
-        for log in logs:
-            logs_data.append({
-                "id": log.id,
-                "timestamp": log.timestamp.isoformat(),
-                "user": log.user,
-                "action": log.action,
-                "resource": log.resource,
-                "details": log.details,
-                "ip_address": log.ip_address,
-                "success": log.success
-            })
+        for i, line in enumerate(paginated_lines):
+            # Parse the log line
+            # Format: timestamp - logger - level - message
+            parts = line.strip().split(' - ', 3)
+            if len(parts) >= 4:
+                timestamp, logger, level, message = parts
+                logs_data.append({
+                    "id": total - offset - i,
+                    "timestamp": timestamp,
+                    "user": logger,
+                    "action": level,
+                    "resource": "",
+                    "details": message,
+                    "ip_address": "",
+                    "success": "INFO" if level == "INFO" else level
+                })
+            else:
+                # If parsing fails, treat as plain text
+                logs_data.append({
+                    "id": total - offset - i,
+                    "timestamp": datetime.now().isoformat(),
+                    "user": "system",
+                    "action": "LOG",
+                    "resource": "",
+                    "details": line.strip(),
+                    "ip_address": "",
+                    "success": "INFO"
+                })
         
         return {
             "logs": logs_data,
@@ -43,4 +84,4 @@ async def get_audit_logs_endpoint(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving audit logs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving server logs: {str(e)}")
