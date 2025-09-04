@@ -89,10 +89,11 @@ const AuditLogs: React.FC = () => {
   };
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString('fr-FR');
+    // Handle format like '2025-09-04 17:59:16,245' by converting to ISO format
+    const isoTimestamp = timestamp.replace(' ', 'T').replace(',', '.') + 'Z';
+    return new Date(isoTimestamp).toLocaleString('en-US');
   };
 
-  // Vérifier si l'utilisateur est admin
   if (user?.role !== 'admin') {
     return (
       <Box p={3}>
@@ -136,7 +137,6 @@ const AuditLogs: React.FC = () => {
                 <TableCell>Level</TableCell>
                 <TableCell>Source</TableCell>
                 <TableCell>Message</TableCell>
-                <TableCell>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -167,11 +167,6 @@ const AuditLogs: React.FC = () => {
                   <TableCell>
                     <Typography variant="body2">
                       {log.details}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontFamily="monospace">
-                      {log.success || log.ip_address || '-'}
                     </Typography>
                   </TableCell>
                 </TableRow>
