@@ -21,6 +21,8 @@ import WorkflowTest from './pages/WorkflowTest';
 import Connectors from './pages/Connectors';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
+import Settings from './pages/Settings';
+import AuditLogs from './pages/AuditLogs';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -257,6 +259,22 @@ const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminUsers />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="admin/settings"
+                element={
+                  <AdminRoute>
+                    <Settings />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="admin/audit-logs"
+                element={
+                  <AdminRoute>
+                    <AuditLogs />
                   </AdminRoute>
                 }
               />

@@ -32,6 +32,9 @@ import {
   Settings,
   Description,
   People,
+  AdminPanelSettings,
+  ExpandMore,
+  ExpandLess,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,12 +57,12 @@ const navigationItems: NavigationItem[] = [
   { text: 'Workflows', icon: <AccountTree />, path: '/workflows' },
   { text: 'Connectors', icon: <Settings />, path: '/connectors' },
   { text: 'DSL Query', icon: <Code />, path: '/dsl-query' },
-  { text: 'Users', icon: <People />, path: '/admin/users', adminOnly: true },
 ];
 
 const Layout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -123,6 +126,55 @@ const Layout: React.FC = () => {
       <Box sx={{ mt: 'auto' }}>
         <Divider />
         <List>
+          {user?.role === 'admin' && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  sx={{
+                    '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                    '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+                  }}
+                >
+                  <ListItemIcon><AdminPanelSettings /></ListItemIcon>
+                  <ListItemText primary="Settings" />
+                  {settingsOpen ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+              </ListItem>
+              {settingsOpen && (
+                <>
+                  <ListItem disablePadding sx={{ pl: 4 }}>
+                    <ListItemButton
+                      selected={location.pathname === '/admin/users'}
+                      onClick={() => handleNavigation('/admin/users')}
+                      sx={{
+                        '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                        '&.Mui-selected .MuiListItemIcon-root': { color: 'primary.main' },
+                        '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+                      }}
+                    >
+                      <ListItemIcon><People /></ListItemIcon>
+                      <ListItemText primary="Users" />
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem disablePadding sx={{ pl: 4 }}>
+                    <ListItemButton
+                      selected={location.pathname === '/admin/audit-logs'}
+                      onClick={() => handleNavigation('/admin/audit-logs')}
+                      sx={{
+                        '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                        '&.Mui-selected .MuiListItemIcon-root': { color: 'primary.main' },
+                        '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+                      }}
+                    >
+                      <ListItemIcon><Description /></ListItemIcon>
+                      <ListItemText primary="Audit Logs" />
+                    </ListItemButton>
+                  </ListItem>
+                </>
+              )}
+            </>
+          )}
           <ListItem disablePadding>
             <ListItemButton
               component="a"

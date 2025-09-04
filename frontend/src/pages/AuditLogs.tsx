@@ -1,0 +1,192 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Chip,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../services/api';
+
+interface AuditLog {
+  id: number;
+  timestamp: string;
+  user: string;
+  action: string;
+  resource: string;
+  details: string;
+  ip_address: string;
+}
+
+interface AuditLogsResponse {
+  logs: AuditLog[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+const AuditLogs: React.FC = () => {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [total, setTotal] = useState(0);
+  const { user } = useAuth();
+
+  const fetchLogs = async (offset: number = 0, limit: number = 25) => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get<AuditLogsResponse>(`/api/v1/audit-logs?offset=${offset}&limit=${limit}`);
+      setLogs(response.data.logs);
+      setTotal(response.data.total);
+      setError(null);
+    } catch (error) {
+      console.error('Erreur lors du chargement des logs:', error);
+      setError('Unable to load audit logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs(page * rowsPerPage, rowsPerPage);
+  }, [page, rowsPerPage]);
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case 'LOGIN': return 'info';
+      case 'CREATE': return 'success';
+      case 'UPDATE': return 'warning';
+      case 'DELETE': return 'error';
+      case 'VIEW': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('fr-FR');
+  };
+
+  // Vérifier si l'utilisateur est admin
+  if (user?.role !== 'admin') {
+    return (
+      <Box p={3}>
+        <Alert severity="error">
+          Access denied. This page is reserved for administrators.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box p={3}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Audit Logs
+      </Typography>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        History of actions performed in the application
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date/Time</TableCell>
+                <TableCell>User</TableCell>
+                <TableCell>Action</TableCell>
+                <TableCell>Resource</TableCell>
+                <TableCell>Details</TableCell>
+                <TableCell>IP Address</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow key={log.id} hover>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {formatTimestamp(log.timestamp)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium">
+                      {log.user}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={log.action}
+                      color={getActionColor(log.action) as any}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {log.resource}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {log.details}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontFamily="monospace">
+                      {log.ip_address}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          component="div"
+          count={total}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Rows per page:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
+        />
+      </Paper>
+    </Box>
+  );
+};
+
+export default AuditLogs;

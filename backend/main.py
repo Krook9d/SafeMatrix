@@ -5,6 +5,7 @@ from .core.database import engine, SessionLocal
 from .core.opensearch_client import create_indexes
 from .models import user
 from .models import workflow
+from .models import audit_log
 from .api.v1 import users as users_router
 from .api.v1 import login as login_router
 from .api.v1 import health as health_router
@@ -16,12 +17,14 @@ from .api.v1 import dashboard as dashboard_router
 from .api.v1 import opensearch as opensearch_router
 from .api.v1 import workflows as workflows_router
 from .api.v1 import connectors as connectors_router
+from .api.v1 import audit_logs as audit_logs_router
 from .core.config import settings
 from .crud import user as crud_user
 from .schemas import user as schemas_user
 
 user.Base.metadata.create_all(bind=engine)
 workflow.Base.metadata.create_all(bind=engine)
+audit_log.Base.metadata.create_all(bind=engine)
 create_indexes()
 
 # Bootstrap admin user if configured
@@ -80,6 +83,7 @@ app.include_router(dashboard_router.router, prefix="/api/v1", tags=["dashboard"]
 app.include_router(opensearch_router.router, prefix="/api/v1/opensearch", tags=["opensearch"])
 app.include_router(workflows_router.router, prefix="/api/v1/workflows", tags=["workflows"])
 app.include_router(connectors_router.router, prefix="/api/v1/connectors", tags=["connectors"])
+app.include_router(audit_logs_router.router, prefix="/api/v1", tags=["audit-logs"])
 
 @app.get("/")
 def read_root():
