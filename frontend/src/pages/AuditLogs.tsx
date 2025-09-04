@@ -12,7 +12,14 @@ import {
   TablePagination,
   Chip,
   Alert,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Button,
+  Grid
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
@@ -42,12 +49,21 @@ const AuditLogs: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [total, setTotal] = useState(0);
+  const [levelFilter, setLevelFilter] = useState<string>('');
+  const [dateFilter, setDateFilter] = useState<string>('');
   const { user } = useAuth();
 
   const fetchLogs = async (offset: number = 0, limit: number = 25) => {
     try {
       setLoading(true);
-      const response = await apiClient.get<AuditLogsResponse>(`/api/v1/audit-logs?offset=${offset}&limit=${limit}`);
+      let url = `/api/v1/audit-logs?offset=${offset}&limit=${limit}`;
+      if (levelFilter) {
+        url += `&level=${levelFilter}`;
+      }
+      if (dateFilter) {
+        url += `&date=${dateFilter}`;
+      }
+      const response = await apiClient.get<AuditLogsResponse>(url);
       setLogs(response.data.logs);
       setTotal(response.data.total);
       setError(null);
@@ -61,7 +77,7 @@ const AuditLogs: React.FC = () => {
 
   useEffect(() => {
     fetchLogs(page * rowsPerPage, rowsPerPage);
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, levelFilter, dateFilter]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -69,6 +85,25 @@ const AuditLogs: React.FC = () => {
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleLevelFilterChange = (event: any) => {
+    setLevelFilter(event.target.value);
+    setPage(0);
+  };
+
+  const handleDateFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const dateTimeValue = event.target.value;
+    // Convert datetime-local format to our log format for filtering
+    const formattedDate = dateTimeValue.replace('T', ' ');
+    setDateFilter(formattedDate);
+    setPage(0);
+  };
+
+  const clearFilters = () => {
+    setLevelFilter('');
+    setDateFilter('');
     setPage(0);
   };
 
@@ -120,6 +155,60 @@ const AuditLogs: React.FC = () => {
       <Typography variant="body1" color="text.secondary" gutterBottom>
         Backend server logs and system activity
       </Typography>
+
+      {/* Filters Section */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Filters
+        </Typography>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={5}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Log Level</InputLabel>
+              <Select
+                value={levelFilter}
+                label="Log Level"
+                onChange={handleLevelFilterChange}
+              >
+                <MenuItem value="">
+                  <em>All Levels</em>
+                </MenuItem>
+                <MenuItem value="INFO">INFO</MenuItem>
+                <MenuItem value="WARNING">WARNING</MenuItem>
+                <MenuItem value="ERROR">ERROR</MenuItem>
+                <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+                <MenuItem value="DEBUG">DEBUG</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={5}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Filter by Date & Time"
+              type="datetime-local"
+              value={dateFilter}
+              onChange={handleDateFilterChange}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              inputProps={{
+                step: 60, // Allow minute precision
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <Button
+              variant="outlined"
+              onClick={clearFilters}
+              fullWidth
+              size="small"
+            >
+              Clear
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
