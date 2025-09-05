@@ -186,7 +186,7 @@ export interface DashboardStats {
 
 // Workflow Types
 export type WorkflowStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
-export type ConnectorType = 'EMAIL' | 'THEHIVE' | 'SERVICENOW';
+export type ConnectorType = 'EMAIL' | 'THEHIVE' | 'SERVICENOW' | 'JIRA';
 export type ExecutionStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
 export type RuleOperator = 'equals' | 'not_equals' | 'greater_than' | 'greater_than_or_equal' | 
                           'less_than' | 'less_than_or_equal' | 'contains' | 'not_contains' | 'in' | 'not_in';

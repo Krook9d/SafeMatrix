@@ -44,6 +44,7 @@ import type { ConnectorConfig, ConnectorConfigCreate, ConnectorType } from '../s
 import TheHiveIcon from '../components/TheHiveIcon';
 import EmailIcon from '../components/EmailIcon';
 import ServiceNowIcon from '../components/ServiceNowIcon';
+import JiraIcon from '../components/JiraIcon';
 
 // Type for form data that allows empty connector type
 interface ConnectorFormData {
@@ -182,6 +183,8 @@ const Connectors: React.FC = () => {
         return <TheHiveIcon width={24} height={24} />;
       case 'SERVICENOW':
         return <ServiceNowIcon width={24} height={24} />;
+      case 'JIRA':
+        return <JiraIcon width={24} height={24} />;
       default:
         return <Settings />;
     }
@@ -373,6 +376,71 @@ const Connectors: React.FC = () => {
                 onChange={(e) => setFormData({
                   ...formData,
                   config: { ...formData.config, table: e.target.value }
+                })}
+              />
+            </Grid>
+          </Grid>
+        );
+      
+      case 'JIRA':
+        return (
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Jira URL"
+                placeholder="https://company.atlassian.net"
+                value={formData.config.url || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, url: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                value={formData.config.email || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, email: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="API Token"
+                type="password"
+                value={formData.config.api_token || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, api_token: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Project Key"
+                placeholder="VULN"
+                value={formData.config.project_key || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, project_key: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Issue Type (optional)"
+                placeholder="Task"
+                value={formData.config.issue_type || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: { ...formData.config, issue_type: e.target.value }
                 })}
               />
             </Grid>
@@ -585,6 +653,7 @@ const Connectors: React.FC = () => {
                   <MenuItem value="EMAIL">Email</MenuItem>
                   <MenuItem value="THEHIVE">TheHive</MenuItem>
                   <MenuItem value="SERVICENOW">ServiceNow</MenuItem>
+                  <MenuItem value="JIRA">Jira</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

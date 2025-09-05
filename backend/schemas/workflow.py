@@ -12,6 +12,7 @@ class ConnectorType(str, Enum):
     EMAIL = "EMAIL"
     THEHIVE = "THEHIVE"
     SERVICENOW = "SERVICENOW"
+    JIRA = "JIRA"
 
 class ExecutionStatus(str, Enum):
     PENDING = "PENDING"
@@ -63,9 +64,15 @@ class ServiceNowAction(BaseModel):
     category: Optional[str] = Field(default=None, description="Incident category")
     assignment_group: Optional[str] = Field(default=None, description="Assignment group")
 
+class JiraAction(BaseModel):
+    connector_id: int = Field(..., description="Jira connector configuration ID")
+    title: Optional[str] = Field(default=None, description="Issue title template")
+    project_key: Optional[str] = Field(default=None, description="Project key override")
+    issue_type: str = Field(default="Task", description="Issue type")
+
 class WorkflowAction(BaseModel):
-    type: str = Field(..., description="Action type (email, thehive, servicenow)")
-    config: Union[EmailAction, TheHiveAction, ServiceNowAction] = Field(..., description="Action configuration")
+    type: str = Field(..., description="Action type (email, thehive, servicenow, jira)")
+    config: Union[EmailAction, TheHiveAction, ServiceNowAction, JiraAction] = Field(..., description="Action configuration")
     
     @validator('config', pre=True)
     def validate_config(cls, v, values):
@@ -76,6 +83,8 @@ class WorkflowAction(BaseModel):
             return TheHiveAction(**v)
         elif action_type == 'servicenow' and not isinstance(v, ServiceNowAction):
             return ServiceNowAction(**v)
+        elif action_type == 'jira' and not isinstance(v, JiraAction):
+            return JiraAction(**v)
         return v
 
 class WorkflowBase(BaseModel):
@@ -186,10 +195,16 @@ class ServiceNowConnectorConfig(BaseModel):
     table: str = Field(default="incident", description="ServiceNow table name")
     verify_ssl: bool = Field(default=True, description="Verify SSL certificates when connecting to ServiceNow")
 
+class JiraConnectorConfig(BaseModel):
+    url: str = Field(..., description="Jira Cloud instance URL")
+    email: str = Field(..., description="Jira account email")
+    api_token: str = Field(..., description="Jira API token")
+    project_key: str = Field(..., description="Default project key")
+
 class ConnectorConfigBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Connector name")
     connector_type: ConnectorType = Field(..., description="Connector type")
-    config: Union[EmailConnectorConfig, TheHiveConnectorConfig, ServiceNowConnectorConfig] = Field(..., description="Connector configuration")
+    config: Union[EmailConnectorConfig, TheHiveConnectorConfig, ServiceNowConnectorConfig, JiraConnectorConfig] = Field(..., description="Connector configuration")
     enabled: bool = Field(default=True, description="Whether connector is enabled")
 
 class ConnectorConfigCreate(ConnectorConfigBase):
@@ -197,7 +212,7 @@ class ConnectorConfigCreate(ConnectorConfigBase):
 
 class ConnectorConfigUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    config: Optional[Union[EmailConnectorConfig, TheHiveConnectorConfig, ServiceNowConnectorConfig]] = None
+    config: Optional[Union[EmailConnectorConfig, TheHiveConnectorConfig, ServiceNowConnectorConfig, JiraConnectorConfig]] = None
     enabled: Optional[bool] = None
 
 class ConnectorConfig(ConnectorConfigBase):

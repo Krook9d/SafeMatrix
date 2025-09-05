@@ -25,7 +25,7 @@ def upgrade() -> None:
     
     # Create enums with correct values matching Python enum names
     op.execute("CREATE TYPE workflowstatus AS ENUM ('ACTIVE', 'INACTIVE', 'DRAFT');")
-    op.execute("CREATE TYPE connectortype AS ENUM ('EMAIL', 'THEHIVE', 'SERVICENOW');")
+    op.execute("CREATE TYPE connectortype AS ENUM ('EMAIL', 'THEHIVE', 'SERVICENOW', 'JIRA');")
     op.execute("CREATE TYPE executionstatus AS ENUM ('PENDING', 'RUNNING', 'SUCCESS', 'FAILED', 'SKIPPED');")
     
     # Create tables if they don't exist

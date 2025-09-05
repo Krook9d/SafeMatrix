@@ -5,20 +5,12 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-try:
-    # Try importing from backend module (when running from project root)
-    from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
-    from backend.core.rules_engine import RulesEngine
-    from backend.core.connectors.factory import ConnectorFactory
-    from backend.schemas.workflow import RuleCondition, WorkflowAction
-    from backend.core.task_queue import WorkflowQueue
-except ImportError:
-    # Fall back to local imports (when running from backend directory)
-    from models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
-    from .rules_engine import RulesEngine
-    from .connectors.factory import ConnectorFactory
-    from schemas.workflow import RuleCondition, WorkflowAction
-    from .task_queue import WorkflowQueue
+# Import from backend module (when running from project root)
+from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
+from backend.core.rules_engine import RulesEngine
+from backend.core.connectors.factory import ConnectorFactory
+from backend.schemas.workflow import RuleCondition, WorkflowAction
+from backend.core.task_queue import WorkflowQueue
 import hashlib
 import json
 
@@ -287,8 +279,9 @@ class WorkflowEngine:
         # Map action types to connector types
         action_to_connector_map = {
             "thehive": "THEHIVE",
-            "email": "EMAIL", 
-            "servicenow": "SERVICENOW"
+            "email": "EMAIL",
+            "servicenow": "SERVICENOW",
+            "jira": "JIRA"
         }
         
         connector_type = action_to_connector_map.get(action_type.lower())

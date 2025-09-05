@@ -3,6 +3,7 @@ from .base import BaseConnector
 from .email_connector import EmailConnector
 from .thehive_connector import TheHiveConnector
 from .servicenow_connector import ServiceNowConnector
+from .jira_connector import JiraConnector
 from backend.schemas.workflow import ConnectorType
 
 class ConnectorFactory:
@@ -14,6 +15,7 @@ class ConnectorFactory:
         ConnectorType.EMAIL: EmailConnector,
         ConnectorType.THEHIVE: TheHiveConnector,
         ConnectorType.SERVICENOW: ServiceNowConnector,
+        ConnectorType.JIRA: JiraConnector,
     }
     
     @classmethod
