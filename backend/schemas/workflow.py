@@ -199,7 +199,7 @@ class JiraConnectorConfig(BaseModel):
     url: str = Field(..., description="Jira Cloud instance URL")
     email: str = Field(..., description="Jira account email")
     api_token: str = Field(..., description="Jira API token")
-    project_key: str = Field(..., description="Default project key")
+    # Note: Project is set per-action in JiraAction.project_key so one connector can serve multiple projects
 
 class ConnectorConfigBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Connector name")

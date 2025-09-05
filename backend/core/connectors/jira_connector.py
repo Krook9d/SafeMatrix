@@ -19,31 +19,26 @@ class JiraConnector(BaseConnector):
         self.url = config.get("url", "").rstrip("/")
         self.email = config.get("email", "")
         self.api_token = config.get("api_token", "")
-        self.project_key = config.get("project_key", "VULN")
+        # Optional defaults; project is now provided per action
         self.issue_type = config.get("issue_type", "Task")
         
         if not all([self.url, self.email, self.api_token]):
             raise ValueError("Jira connector requires url, email, and api_token")
     
     async def test_connection(self) -> Dict[str, Any]:
-        """Test connection to Jira by checking project access."""
+        """Test connection to Jira by checking current user (/myself)."""
         try:
             headers = self._get_auth_headers()
             
             async with aiohttp.ClientSession() as session:
-                # Test connection by fetching project info
-                project_url = f"{self.url}/rest/api/3/project/{self.project_key}"
-                async with session.get(project_url, headers=headers) as response:
+                # Test authentication by calling /myself
+                me_url = f"{self.url}/rest/api/3/myself"
+                async with session.get(me_url, headers=headers) as response:
                     if response.status == 200:
-                        project_data = await response.json()
+                        user_data = await response.json()
                         return {
                             "success": True,
-                            "message": f"Successfully connected to Jira project: {project_data.get('name', self.project_key)}"
-                        }
-                    elif response.status == 404:
-                        return {
-                            "success": False,
-                            "message": f"Project '{self.project_key}' not found or no access"
+                            "message": f"Authenticated as {user_data.get('displayName', self.email)}"
                         }
                     else:
                         error_text = await response.text()
@@ -96,7 +91,9 @@ class JiraConnector(BaseConnector):
     ) -> Dict[str, Any]:
         """Create a Jira issue for a vulnerability."""
         try:
-            project = project_key or self.project_key
+            if not project_key:
+                raise ValueError("Jira action requires 'project_key' to be specified in the action config")
+            project = project_key
             issue_type_name = issue_type or self.issue_type
             
             # Map CVSS score to Jira priority

@@ -423,18 +423,6 @@ const Connectors: React.FC = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Project Key"
-                placeholder="VULN"
-                value={formData.config.project_key || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  config: { ...formData.config, project_key: e.target.value }
-                })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
                 label="Issue Type (optional)"
                 placeholder="Task"
                 value={formData.config.issue_type || ''}
