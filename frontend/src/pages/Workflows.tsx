@@ -98,25 +98,27 @@ const Workflows: React.FC = () => {
   };
 
   const getStatusColor = (status: WorkflowStatus) => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'default';
-      case 'draft':
-        return 'warning';
+    const s = (status as string).toUpperCase();
+    switch (s) {
+      case 'ACTIVE':
+        return 'success' as const;
+      case 'INACTIVE':
+        return 'default' as const;
+      case 'DRAFT':
+        return 'warning' as const;
       default:
-        return 'default';
+        return 'default' as const;
     }
   };
 
   const getStatusIcon = (status: WorkflowStatus) => {
-    switch (status) {
-      case 'active':
+    const s = (status as string).toUpperCase();
+    switch (s) {
+      case 'ACTIVE':
         return <CheckCircle sx={{ fontSize: 16 }} />;
-      case 'inactive':
+      case 'INACTIVE':
         return <Pause sx={{ fontSize: 16 }} />;
-      case 'draft':
+      case 'DRAFT':
         return <Edit sx={{ fontSize: 16 }} />;
       default:
         return null;
@@ -247,33 +249,69 @@ const Workflows: React.FC = () => {
                     <TableCell>
                       <Chip
                         icon={getStatusIcon(workflow.status)}
-                        label={workflow.status.charAt(0).toUpperCase() + workflow.status.slice(1)}
+                        label={(workflow.status as string).toUpperCase()}
                         color={getStatusColor(workflow.status)}
                         size="small"
-                        sx={{ fontWeight: 600 }}
+                        sx={{
+                          fontWeight: 700,
+                          borderRadius: '999px',
+                          px: 1,
+                        }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
+                        icon={<Timeline sx={{ fontSize: 16 }} />}
                         label={`${workflow.rules.length} rule${workflow.rules.length !== 1 ? 's' : ''}`}
                         variant="outlined"
                         size="small"
+                        sx={{
+                          borderRadius: '999px',
+                          bgcolor: alpha(theme.palette.info.main, 0.06),
+                          borderColor: alpha(theme.palette.info.main, 0.2),
+                        }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
+                        icon={<Settings sx={{ fontSize: 16 }} />}
                         label={`${workflow.actions.length} action${workflow.actions.length !== 1 ? 's' : ''}`}
                         variant="outlined"
                         size="small"
+                        sx={{
+                          borderRadius: '999px',
+                          bgcolor: alpha(theme.palette.primary.main, 0.06),
+                          borderColor: alpha(theme.palette.primary.main, 0.2),
+                        }}
                       />
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
                         {workflow.trigger_on_ingest && (
-                          <Chip label="Ingest" size="small" color="primary" variant="outlined" />
+                          <Chip
+                            label="Ingest"
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderRadius: '999px',
+                              bgcolor: alpha(theme.palette.success.main, 0.06),
+                              borderColor: alpha(theme.palette.success.main, 0.2),
+                              color: theme.palette.success.main,
+                            }}
+                          />
                         )}
                         {workflow.trigger_on_schedule && (
-                          <Chip label="Schedule" size="small" color="secondary" variant="outlined" />
+                          <Chip
+                            label="Schedule"
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderRadius: '999px',
+                              bgcolor: alpha(theme.palette.secondary.main, 0.06),
+                              borderColor: alpha(theme.palette.secondary.main, 0.2),
+                              color: theme.palette.secondary.main,
+                            }}
+                          />
                         )}
                       </Box>
                     </TableCell>

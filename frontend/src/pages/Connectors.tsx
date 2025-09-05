@@ -29,6 +29,7 @@ import {
   alpha,
   Fade,
   Grow,
+  Tooltip,
 } from '@mui/material';
 import {
   Add,
@@ -175,18 +176,18 @@ const Connectors: React.FC = () => {
     });
   };
 
-  const getConnectorIcon = (type: ConnectorType) => {
+  const getConnectorIcon = (type: ConnectorType, size: number = 28) => {
     switch (type) {
       case 'EMAIL':
-        return <EmailIcon width={24} height={24} />;
+        return <EmailIcon width={size} height={size} />;
       case 'THEHIVE':
-        return <TheHiveIcon width={24} height={24} />;
+        return <TheHiveIcon width={size} height={size} />;
       case 'SERVICENOW':
-        return <ServiceNowIcon width={24} height={24} />;
+        return <ServiceNowIcon width={size} height={size} />;
       case 'JIRA':
-        return <JiraIcon width={24} height={24} />;
+        return <JiraIcon width={size} height={size} />;
       default:
-        return <Settings />;
+        return <Settings sx={{ fontSize: size }} />;
     }
   };
 
@@ -513,18 +514,17 @@ const Connectors: React.FC = () => {
                   <TableRow hover>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={2}>
-                        {getConnectorIcon(connector.connector_type)}
                         <Typography variant="subtitle2" fontWeight="medium">
                           {connector.name}
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={connector.connector_type.charAt(0).toUpperCase() + connector.connector_type.slice(1)}
-                        variant="outlined"
-                        size="small"
-                      />
+                    <TableCell sx={{ width: 80 }}>
+                      <Tooltip title={connector.connector_type.charAt(0).toUpperCase() + connector.connector_type.slice(1)}>
+                        <Box display="flex" alignItems="center" justifyContent="flex-start" gap={1}>
+                          {getConnectorIcon(connector.connector_type, 28)}
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
