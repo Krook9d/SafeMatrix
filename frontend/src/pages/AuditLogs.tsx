@@ -17,10 +17,14 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
   Button,
   Grid
 } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
 
@@ -50,7 +54,11 @@ const AuditLogs: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [total, setTotal] = useState(0);
   const [levelFilter, setLevelFilter] = useState<string>('');
-  const [dateFilter, setDateFilter] = useState<string>('');
+  // Filter mode: 'day' for a single date (YYYY-MM-DD), 'between' for a start/end with time
+  const [filterMode, setFilterMode] = useState<'day' | 'between'>('day');
+  const [dayFilter, setDayFilter] = useState<Dayjs | null>(null);
+  const [startFilter, setStartFilter] = useState<Dayjs | null>(null);
+  const [endFilter, setEndFilter] = useState<Dayjs | null>(null);
   const { user } = useAuth();
 
   const fetchLogs = async (offset: number = 0, limit: number = 25) => {
@@ -60,8 +68,13 @@ const AuditLogs: React.FC = () => {
       if (levelFilter) {
         url += `&level=${levelFilter}`;
       }
-      if (dateFilter) {
-        url += `&date=${dateFilter}`;
+      if (filterMode === 'day' && dayFilter) {
+        const dayParam = dayjs(dayFilter).format('YYYY-MM-DD');
+        url += `&day=${encodeURIComponent(dayParam)}`;
+      } else if (filterMode === 'between' && startFilter && endFilter) {
+        const startParam = dayjs(startFilter).format('YYYY-MM-DD HH:mm');
+        const endParam = dayjs(endFilter).format('YYYY-MM-DD HH:mm');
+        url += `&start=${encodeURIComponent(startParam)}&end=${encodeURIComponent(endParam)}`;
       }
       const response = await apiClient.get<AuditLogsResponse>(url);
       setLogs(response.data.logs);
@@ -77,7 +90,7 @@ const AuditLogs: React.FC = () => {
 
   useEffect(() => {
     fetchLogs(page * rowsPerPage, rowsPerPage);
-  }, [page, rowsPerPage, levelFilter, dateFilter]);
+  }, [page, rowsPerPage, levelFilter, filterMode, dayFilter, startFilter, endFilter]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -93,17 +106,21 @@ const AuditLogs: React.FC = () => {
     setPage(0);
   };
 
-  const handleDateFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const dateTimeValue = event.target.value;
-    // Convert datetime-local format to our log format for filtering
-    const formattedDate = dateTimeValue.replace('T', ' ');
-    setDateFilter(formattedDate);
+  const handleFilterModeChange = (event: any) => {
+    setFilterMode(event.target.value);
+    // Reset date values when switching modes to avoid confusion
+    setDayFilter(null);
+    setStartFilter(null);
+    setEndFilter(null);
     setPage(0);
   };
 
   const clearFilters = () => {
     setLevelFilter('');
-    setDateFilter('');
+    setFilterMode('day');
+    setDayFilter(null);
+    setStartFilter(null);
+    setEndFilter(null);
     setPage(0);
   };
 
@@ -162,13 +179,14 @@ const AuditLogs: React.FC = () => {
           Filters
         </Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={5}>
-            <FormControl fullWidth size="small">
+          <Grid item xs={12} sm={4}>
+            <FormControl size="small" fullWidth sx={{ minWidth: 300 }}>
               <InputLabel>Log Level</InputLabel>
               <Select
                 value={levelFilter}
                 label="Log Level"
                 onChange={handleLevelFilterChange}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 320 } } }}
               >
                 <MenuItem value="">
                   <em>All Levels</em>
@@ -181,27 +199,54 @@ const AuditLogs: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={5}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Filter by Date & Time"
-              type="datetime-local"
-              value={dateFilter}
-              onChange={handleDateFilterChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              inputProps={{
-                step: 60, // Allow minute precision
-              }}
-            />
+          <Grid item xs={12} sm={4}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Mode</InputLabel>
+              <Select label="Mode" value={filterMode} onChange={handleFilterModeChange}>
+                <MenuItem value="day">Single day</MenuItem>
+                <MenuItem value="between">Between (date & time)</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
-          <Grid item xs={12} sm={2}>
+          <Grid item xs={12} sm={4}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              {filterMode === 'day' ? (
+                <DatePicker
+                  label="Day"
+                  value={dayFilter}
+                  onChange={(v) => { setDayFilter(v); setPage(0); }}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                />
+              ) : (
+                <Grid container spacing={1}>
+                  <Grid item xs={6}>
+                    <DateTimePicker
+                      label="Start"
+                      value={startFilter}
+                      onChange={(v) => { setStartFilter(v); setPage(0); }}
+                      slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                      views={["year", "month", "day", "hours", "minutes"]}
+                      minutesStep={1}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <DateTimePicker
+                      label="End"
+                      value={endFilter}
+                      onChange={(v) => { setEndFilter(v); setPage(0); }}
+                      slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                      views={["year", "month", "day", "hours", "minutes"]}
+                      minutesStep={1}
+                    />
+                  </Grid>
+                </Grid>
+              )}
+            </LocalizationProvider>
+          </Grid>
+          <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
             <Button
               variant="outlined"
               onClick={clearFilters}
-              fullWidth
               size="small"
             >
               Clear

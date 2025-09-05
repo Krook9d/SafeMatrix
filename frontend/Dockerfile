@@ -15,4 +15,5 @@ COPY . .
 EXPOSE 5173
 
 # Start the dev server
-CMD ["npm", "run", "dev", "--", "--host"]
+# Always install dependencies on start to avoid stale node_modules from anonymous volumes skipping new deps
+CMD ["sh", "-c", "npm install && npm run dev -- --host"]
