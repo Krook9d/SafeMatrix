@@ -241,6 +241,13 @@ Affected Products: {{affected_products}}`,
           priority: 3,
           category: 'Security'
         };
+      case 'jira':
+        return {
+          connector_id: defaultConnectorId,
+          title: 'Security Vulnerability: {{cve_id}}',
+          project_key: '',
+          issue_type: 'Task'
+        };
       default:
         return {};
     }
@@ -479,6 +486,14 @@ Affected Products: {{affected_products}}`,
             >
               Add ServiceNow
             </Button>
+            <Button
+              variant="outlined"
+              onClick={() => addAction('jira')}
+              sx={{ ml: 1 }}
+              disabled={!connectors.find(c => c.connector_type === 'JIRA' && c.enabled)}
+            >
+              Add Jira
+            </Button>
           </Box>
         </Box>
 
@@ -695,6 +710,46 @@ Affected Products: {{affected_products}}`,
                 onChange={(e) => updateAction(index, {
                   ...action,
                   config: { ...action.config, category: e.target.value }
+                })}
+              />
+            </Grid>
+          </>
+        )}
+
+        {action.type === 'jira' && (
+          <>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                value={action.config.title || ''}
+                onChange={(e) => updateAction(index, {
+                  ...action,
+                  config: { ...action.config, title: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Project Key"
+                placeholder="e.g., SOC"
+                value={action.config.project_key || ''}
+                onChange={(e) => updateAction(index, {
+                  ...action,
+                  config: { ...action.config, project_key: e.target.value }
+                })}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Issue Type"
+                placeholder="Task, Bug, Story..."
+                value={action.config.issue_type || 'Task'}
+                onChange={(e) => updateAction(index, {
+                  ...action,
+                  config: { ...action.config, issue_type: e.target.value }
                 })}
               />
             </Grid>

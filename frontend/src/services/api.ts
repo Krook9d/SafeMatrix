@@ -223,9 +223,16 @@ export interface ServiceNowAction {
   assignment_group?: string;
 }
 
+export interface JiraAction {
+  connector_id: number;
+  title?: string;
+  project_key?: string;
+  issue_type: string; // e.g., Task, Bug, Story
+}
+
 export interface WorkflowAction {
   type: string;
-  config: EmailAction | TheHiveAction | ServiceNowAction;
+  config: EmailAction | TheHiveAction | ServiceNowAction | JiraAction;
 }
 
 export interface Workflow {

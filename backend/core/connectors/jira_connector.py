@@ -112,52 +112,62 @@ class JiraConnector(BaseConnector):
             # Create rich ADF description
             description = self._create_adf_description(vulnerability_data)
             
-            # Prepare issue data
-            issue_data = {
-                "fields": {
-                    "project": {"key": project},
-                    "summary": title,
-                    "description": description,
-                    "issuetype": {"name": issue_type_name},
-                    "priority": {"name": priority},
-                    "labels": ["vulnerability", "safematrix"]
-                }
+            # Prepare base issue data
+            issue_fields = {
+                "project": {"key": project},
+                "summary": title,
+                "description": description,
+                "issuetype": {"name": issue_type_name},
+                # Add a label to preserve priority info even if field is hidden
+                "labels": ["vulnerability", "safematrix", f"priority:{priority}"]
             }
+            
+            # Only include the Jira priority field if it's available on the Create screen
+            can_set_priority = await self._can_set_priority(project, issue_type_name)
+            if can_set_priority:
+                issue_fields["priority"] = {"name": priority}
+
+            issue_data = {"fields": issue_fields}
             
             headers = self._get_auth_headers()
             headers["Content-Type"] = "application/json"
             
             async with aiohttp.ClientSession() as session:
                 create_url = f"{self.url}/rest/api/3/issue"
-                async with session.post(
-                    create_url, 
-                    headers=headers, 
-                    data=json.dumps(issue_data)
-                ) as response:
-                    response_text = await response.text()
-                    
-                    if response.status == 201:
-                        response_data = json.loads(response_text)
-                        issue_key = response_data.get("key")
-                        issue_url = f"{self.url}/browse/{issue_key}"
-                        
-                        logger.info(f"Successfully created Jira issue: {issue_key}")
-                        return {
-                            "success": True,
-                            "message": f"Created Jira issue: {issue_key}",
-                            "details": {
-                                "issue_key": issue_key,
-                                "issue_url": issue_url,
-                                "priority": priority,
-                                "cvss_score": cvss_score
-                            }
+
+                async def _post_issue(payload: dict):
+                    async with session.post(
+                        create_url,
+                        headers=headers,
+                        data=json.dumps(payload)
+                    ) as resp:
+                        return resp.status, await resp.text()
+
+                # Post the issue (priority may or may not be present based on metadata)
+                status_code, response_text = await _post_issue(issue_data)
+
+                if status_code == 201:
+                    response_data = json.loads(response_text)
+                    issue_key = response_data.get("key")
+                    issue_url = f"{self.url}/browse/{issue_key}"
+
+                    logger.info(f"Successfully created Jira issue: {issue_key}")
+                    return {
+                        "success": True,
+                        "message": f"Created Jira issue: {issue_key}",
+                        "details": {
+                            "issue_key": issue_key,
+                            "issue_url": issue_url,
+                            "priority": priority,
+                            "cvss_score": cvss_score
                         }
-                    else:
-                        logger.error(f"Failed to create Jira issue: HTTP {response.status} - {response_text}")
-                        return {
-                            "success": False,
-                            "error": f"Failed to create issue: HTTP {response.status} - {response_text}"
-                        }
+                    }
+                else:
+                    logger.error(f"Failed to create Jira issue: HTTP {status_code} - {response_text}")
+                    return {
+                        "success": False,
+                        "error": f"Failed to create issue: HTTP {status_code} - {response_text}"
+                    }
                         
         except Exception as e:
             logger.error(f"Error creating Jira issue: {e}")
@@ -165,6 +175,44 @@ class JiraConnector(BaseConnector):
                 "success": False,
                 "error": str(e)
             }
+
+    async def _can_set_priority(self, project_key: str, issue_type_name: str) -> bool:
+        """Check via Jira CreateMeta if 'priority' is available for the given project/issue type.
+
+        Returns True if the priority field exists on the Create screen, False otherwise or on error.
+        """
+        try:
+            headers = self._get_auth_headers()
+            headers["Accept"] = "application/json"
+            # We need expand to include fields
+            url = (
+                f"{self.url}/rest/api/3/issue/createmeta"
+                f"?projectKeys={project_key}"
+                f"&issuetypeNames={issue_type_name}"
+                f"&expand=projects.issuetypes.fields"
+            )
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status != 200:
+                        # On failure, default to False to avoid 400s
+                        text = await resp.text()
+                        logger.debug(
+                            "Jira createmeta fetch failed (%s): %s", resp.status, text
+                        )
+                        return False
+                    data = await resp.json()
+                    projects = data.get("projects", [])
+                    if not projects:
+                        return False
+                    issuetypes = projects[0].get("issuetypes", [])
+                    if not issuetypes:
+                        return False
+                    fields = issuetypes[0].get("fields", {})
+                    # Fields keys are field IDs (like 'priority'), values have schema
+                    return "priority" in fields
+        except Exception as e:
+            logger.debug("Error checking Jira createmeta for priority: %s", e)
+            return False
     
     def _get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers for Jira API."""
