@@ -67,7 +67,7 @@ To run the application, database services (PostgreSQL, OpenSearch) must first be
 #### 1. Launch Services (Docker) 
 From the **project root** (the folder containing `docker-compose.yml`), run:
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 This will start PostgreSQL and OpenSearch in the background.
 
