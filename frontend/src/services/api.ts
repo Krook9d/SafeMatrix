@@ -98,16 +98,44 @@ export interface Vulnerability {
   }>;
   metrics?: {
     cvssMetricV31?: Array<{
+      source?: string;
+      type?: string;
       cvssData: {
+        version?: string;
+        vectorString?: string;
         baseScore: number;
         baseSeverity: string;
+        attackVector?: 'NETWORK' | 'ADJACENT_NETWORK' | 'LOCAL' | 'PHYSICAL';
+        attackComplexity?: 'LOW' | 'HIGH';
+        privilegesRequired?: 'NONE' | 'LOW' | 'HIGH';
+        userInteraction?: 'NONE' | 'REQUIRED';
+        scope?: 'UNCHANGED' | 'CHANGED';
+        confidentialityImpact?: 'NONE' | 'LOW' | 'HIGH';
+        integrityImpact?: 'NONE' | 'LOW' | 'HIGH';
+        availabilityImpact?: 'NONE' | 'LOW' | 'HIGH';
       };
+      exploitabilityScore?: number;
+      impactScore?: number;
     }>;
     cvssMetricV30?: Array<{
+      source?: string;
+      type?: string;
       cvssData: {
+        version?: string;
+        vectorString?: string;
         baseScore: number;
         baseSeverity: string;
+        attackVector?: 'NETWORK' | 'ADJACENT_NETWORK' | 'LOCAL' | 'PHYSICAL';
+        attackComplexity?: 'LOW' | 'HIGH';
+        privilegesRequired?: 'NONE' | 'LOW' | 'HIGH';
+        userInteraction?: 'NONE' | 'REQUIRED';
+        scope?: 'UNCHANGED' | 'CHANGED';
+        confidentialityImpact?: 'NONE' | 'LOW' | 'HIGH';
+        integrityImpact?: 'NONE' | 'LOW' | 'HIGH';
+        availabilityImpact?: 'NONE' | 'LOW' | 'HIGH';
       };
+      exploitabilityScore?: number;
+      impactScore?: number;
     }>;
     cvssMetricV2?: Array<{
       cvssData: {
