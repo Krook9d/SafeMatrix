@@ -144,6 +144,12 @@ export interface Vulnerability {
     }>;
   };
   weaknesses?: any[];
+  weaknesses_enriched?: Array<{
+    source?: string;
+    type?: string;
+    cweId?: string;
+    cweName?: string | null;
+  }>;
   configurations?: any[];
   references?: Array<{
     url: string;
