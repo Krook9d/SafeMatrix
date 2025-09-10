@@ -642,6 +642,12 @@ export const inventoryAPI = {
     return response.data.count;
   },
 
+  getHostVulns: async (host_id: string): Promise<Array<{ _id: string; software_name: string; version: string; cves: string[] }>> => {
+    const params = new URLSearchParams({ host_id });
+    const response = await apiClient.get(`/api/v1/inventories/host-vulns?${params}`);
+    return response.data;
+  },
+
   getSoftwareSummary: async (): Promise<SoftwareSummary[]> => {
     const response = await apiClient.get('/api/v1/inventory/software-summary');
     return response.data;

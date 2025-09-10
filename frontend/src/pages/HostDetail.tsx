@@ -127,7 +127,7 @@ const HostDetail: React.FC = () => {
   };
 
   const getTotalVulnerabilities = () => {
-    return inventory.reduce((total, item) => total + item.vulnerabilities.length, 0);
+    return inventory.reduce((total, item) => total + (item.vulnerabilities?.length || 0), 0);
   };
 
   if (loading) {
@@ -326,11 +326,11 @@ const HostDetail: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      {item.vulnerabilities.length > 0 ? (
-                        <Badge badgeContent={item.vulnerabilities.length} color="error">
+                      {(item.vulnerabilities?.length || 0) > 0 ? (
+                        <Badge badgeContent={item.vulnerabilities?.length || 0} color="error">
                           <Chip
                             icon={<Warning />}
-                            label={`${item.vulnerabilities.length} vuln${item.vulnerabilities.length > 1 ? 's' : ''}`}
+                            label={`${item.vulnerabilities?.length || 0} vuln${(item.vulnerabilities?.length || 0) > 1 ? 's' : ''}`}
                             color="error"
                             size="small"
                           />
