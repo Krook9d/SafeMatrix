@@ -38,6 +38,9 @@ const HostDetail: React.FC = () => {
   const navigate = useNavigate();
   const [host, setHost] = useState<Host | null>(null);
   const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [pageSize] = useState<number>(100);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,18 +56,34 @@ const HostDetail: React.FC = () => {
       setError(null);
       
       // Fetch host details and inventory in parallel
-      const [hostData, inventoryData] = await Promise.all([
+      const [hostData, count] = await Promise.all([
         hostsAPI.getById(id),
-        inventoryAPI.getAll(id)
+        inventoryAPI.getCount(id),
       ]);
+      // Fetch first page of inventory
+      const inventoryData = await inventoryAPI.getAll(id, 0, pageSize);
       
       setHost(hostData);
+      setTotalCount(count);
       setInventory(inventoryData);
     } catch (err: any) {
       console.error('Error loading host details:', err);
       setError('Failed to load host details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (!host) return;
+    try {
+      setLoadingMore(true);
+      const nextBatch = await inventoryAPI.getAll(host._id, inventory.length, pageSize);
+      setInventory((prev) => [...prev, ...nextBatch]);
+    } catch (err) {
+      console.error('Error loading more inventory:', err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -233,7 +252,7 @@ const HostDetail: React.FC = () => {
                 Software Count
               </Typography>
               <Typography variant="body1" fontWeight="medium">
-                {inventory.length}
+                {totalCount}
               </Typography>
             </Box>
             <Box>
@@ -256,7 +275,7 @@ const HostDetail: React.FC = () => {
         <Box p={2} borderBottom={1} borderColor="divider">
           <Typography variant="h6" display="flex" alignItems="center">
             <Security sx={{ mr: 1 }} />
-            Software Inventory ({inventory.length})
+            Software Inventory ({totalCount})
           </Typography>
         </Box>
         
@@ -336,9 +355,16 @@ const HostDetail: React.FC = () => {
             </Table>
           </TableContainer>
         )}
+        {inventory.length < totalCount && (
+          <Box p={2} display="flex" justifyContent="center">
+            <Button variant="outlined" onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </Button>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
 };
 
-export default HostDetail; 
+export default HostDetail;

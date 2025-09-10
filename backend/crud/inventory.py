@@ -45,6 +45,30 @@ def get_inventories(
     return results
 
 
+def count_inventories(client: OpenSearch, *, host_id: Optional[str] = None) -> int:
+    """
+    Count inventory items in OpenSearch, optionally filtered by host_id.
+
+    Args:
+        client: The OpenSearch client instance.
+        host_id: Optional host ID to filter the inventory items.
+
+    Returns:
+        The total count of inventory documents matching the query.
+    """
+    query = {"match_all": {}}
+    if host_id:
+        query = {"term": {"host_id": host_id}}
+
+    response = client.count(
+        index=INDEX_INVENTORIES,
+        body={
+            "query": query
+        }
+    )
+    return int(response.get("count", 0))
+
+
 def update_inventory(client: OpenSearch, *, inventory_id: str, inventory_in: InventoryCreate) -> dict | None:
     """
     Update an inventory item in OpenSearch.

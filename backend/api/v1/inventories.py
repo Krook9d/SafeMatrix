@@ -27,6 +27,19 @@ def list_inventories(
     return inventories
 
 
+@router.get("/inventories/count")
+def count_inventories_endpoint(
+    client: OpenSearch = Depends(get_opensearch_client),
+    host_id: Optional[str] = None,
+    current_user: schemas_user.User = Depends(get_current_user),
+):
+    """
+    Return the total count of inventories, optionally filtered by host_id.
+    """
+    total = crud_inventory.count_inventories(client=client, host_id=host_id)
+    return {"count": total}
+
+
 @router.put("/inventories/{inventory_id}", response_model=schemas_inventory.Inventory)
 def update_existing_inventory(
     *,

@@ -630,6 +630,18 @@ export const inventoryAPI = {
     return response.data;
   },
 
+  getCount: async (host_id?: string): Promise<number> => {
+    const params = new URLSearchParams();
+    if (host_id) {
+      params.append('host_id', host_id);
+    }
+    const url = params.toString()
+      ? `/api/v1/inventories/count?${params}`
+      : '/api/v1/inventories/count';
+    const response = await apiClient.get<{ count: number }>(url);
+    return response.data.count;
+  },
+
   getSoftwareSummary: async (): Promise<SoftwareSummary[]> => {
     const response = await apiClient.get('/api/v1/inventory/software-summary');
     return response.data;
