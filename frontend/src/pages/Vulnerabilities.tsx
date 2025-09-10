@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -54,11 +54,13 @@ const Vulnerabilities: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [severityFilter, setSeverityFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [kpiSeverity, setKpiSeverity] = useState<{CRITICAL?: number; HIGH?: number; MEDIUM?: number; LOW?: number}>({});
+
   const itemsPerPage = 100;
   const navigate = useNavigate();
   const theme = useTheme();
@@ -76,44 +78,15 @@ const Vulnerabilities: React.FC = () => {
       const response = await vulnerabilitiesAPI.getAll({
         search: searchTerm || undefined,
         skip: skip,
-        limit: itemsPerPage
+        limit: itemsPerPage,
+        severity: severityFilter ? severityFilter.toUpperCase() : undefined,
+        published: dateFilter || undefined,
       });
       
-      // Apply client-side filtering for now (can be moved to backend later)
-      let filteredVulns = response.vulnerabilities;
-      
-      if (severityFilter) {
-        filteredVulns = filteredVulns.filter(vuln => {
-          const severity = getSeverityLabel(vuln.score);
-          return severity.toLowerCase() === severityFilter.toLowerCase();
-        });
-      }
-      
-      if (dateFilter) {
-        const filterDate = new Date();
-        switch (dateFilter) {
-          case 'last7days':
-            filterDate.setDate(filterDate.getDate() - 7);
-            break;
-          case 'last30days':
-            filterDate.setDate(filterDate.getDate() - 30);
-            break;
-          case 'last90days':
-            filterDate.setDate(filterDate.getDate() - 90);
-            break;
-        }
-        
-        if (dateFilter !== 'all') {
-          filteredVulns = filteredVulns.filter(vuln => {
-            if (!vuln.published_date) return false;
-            const publishedDate = new Date(vuln.published_date);
-            return publishedDate >= filterDate;
-          });
-        }
-      }
-      
-      setVulnerabilities(filteredVulns);
+      setVulnerabilities(response.vulnerabilities);
       setTotal(response.total);
+      setKpiSeverity(response.total_by_severity || {});
+
     } catch (err: any) {
       console.error('Error loading vulnerabilities:', err);
       setError('Failed to load vulnerabilities');
@@ -185,12 +158,9 @@ const Vulnerabilities: React.FC = () => {
     return score.toFixed(1);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchInput(value);
-  };
-
   const submitSearch = () => {
-    setSearchTerm(searchInput);
+    const value = searchInputRef.current?.value ?? '';
+    setSearchTerm(value);
     setPage(1); // Reset to first page when searching
   };
 
@@ -216,26 +186,13 @@ const Vulnerabilities: React.FC = () => {
     setSeverityFilter('');
     setDateFilter('');
     setSearchTerm('');
-    setSearchInput('');
+    if (searchInputRef.current) searchInputRef.current.value = '';
     setPage(1);
   };
 
   // Calculate stats
-  const criticalCount = vulnerabilities.filter(v => {
-    const score = v.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore ||
-                  v.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore ||
-                  v.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore ||
-                  v.score;
-    return score && score >= 9.0;
-  }).length;
-
-  const highCount = vulnerabilities.filter(v => {
-    const score = v.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore ||
-                  v.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore ||
-                  v.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore ||
-                  v.score;
-    return score && score >= 7.0 && score < 9.0;
-  }).length;
+  const criticalCount = kpiSeverity.CRITICAL ?? 0;
+  const highCount = kpiSeverity.HIGH ?? 0;
 
   if (loading && vulnerabilities.length === 0) {
     return (
@@ -479,8 +436,7 @@ const Vulnerabilities: React.FC = () => {
                 fullWidth
                 variant="outlined"
                 placeholder="Search by CVE ID or description..."
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
+                inputRef={searchInputRef}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -543,7 +499,7 @@ const Vulnerabilities: React.FC = () => {
                 variant="outlined"
                 startIcon={<FilterList />}
                 onClick={clearFilters}
-                disabled={!severityFilter && !dateFilter && !searchTerm && !searchInput}
+                disabled={!severityFilter && !dateFilter && !searchTerm}
                 className="filter-button"
               >
                 Clear Filters

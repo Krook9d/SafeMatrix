@@ -14,14 +14,25 @@ async def list_vulnerabilities(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, le=1000),
     search: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None, description="Severity filter: CRITICAL|HIGH|MEDIUM|LOW"),
+    published: Optional[str] = Query(None, description="Published window: last7days|last30days|last90days"),
     client: OpenSearch = Depends(get_opensearch_client)
 ):
-    """Get vulnerabilities with pagination and search."""
-    result = get_vulnerabilities(client, skip=skip, limit=limit, search=search)
+    """Get vulnerabilities with pagination, search and server-side filters applied across the full dataset."""
+    result = get_vulnerabilities(
+        client,
+        skip=skip,
+        limit=limit,
+        search=search,
+        severity=severity,
+        published=published,
+    )
     return VulnerabilityCollection(
         total=result["total"],
-        vulnerabilities=result["vulnerabilities"]
+        vulnerabilities=result["vulnerabilities"],
+        total_by_severity=result.get("total_by_severity", {}),
     )
+
 
 @router.get("/{cve_id}")
 async def get_vulnerability_detail(

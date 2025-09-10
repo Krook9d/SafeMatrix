@@ -180,6 +180,7 @@ export interface CPE {
 export interface VulnerabilityCollection {
   total: number;
   vulnerabilities: Vulnerability[];
+  total_by_severity?: { [key: string]: number };
 }
 
 export interface InventoryVulnerability {
@@ -426,7 +427,7 @@ export const hostsAPI = {
 
 // Vulnerabilities
 export const vulnerabilitiesAPI = {
-  getAll: async (params?: { search?: string; skip?: number; limit?: number }): Promise<VulnerabilityCollection> => {
+  getAll: async (params?: { search?: string; skip?: number; limit?: number; severity?: string; published?: string }): Promise<VulnerabilityCollection> => {
     const searchParams = new URLSearchParams();
     
     if (params?.search) {
@@ -437,6 +438,12 @@ export const vulnerabilitiesAPI = {
     }
     if (params?.limit) {
       searchParams.append('limit', params.limit.toString());
+    }
+    if (params?.severity) {
+      searchParams.append('severity', params.severity);
+    }
+    if (params?.published) {
+      searchParams.append('published', params.published);
     }
     
     const response = await apiClient.get(`/api/v1/vulnerabilities/?${searchParams}`);
