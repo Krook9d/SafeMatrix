@@ -381,81 +381,6 @@ export const authAPI = {
   },
 };
 
-// Users API
-export const usersAPI = {
-  list: async (params?: { skip?: number; limit?: number }): Promise<User[]> => {
-    const searchParams = new URLSearchParams();
-    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
-    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
-    const url = searchParams.toString() ? `/api/v1/users/?${searchParams}` : '/api/v1/users/';
-    const response = await apiClient.get<User[]>(url);
-    return response.data;
-  },
-
-  create: async (payload: CreateUserRequest): Promise<User> => {
-    const response = await apiClient.post<User>('/api/v1/users/', payload);
-    return response.data;
-  },
-
-  updateRole: async (username: string, role: Role): Promise<User> => {
-    const response = await apiClient.put<User>(`/api/v1/users/${encodeURIComponent(username)}/role`, { role });
-    return response.data;
-  },
-
-  delete: async (username: string): Promise<void> => {
-    await apiClient.delete(`/api/v1/users/${encodeURIComponent(username)}`);
-  },
-};
-
-// Hosts
-export const hostsAPI = {
-  getAll: async (): Promise<Host[]> => {
-    const response = await apiClient.get<Host[]>('/api/v1/hosts/');
-    return response.data;
-  },
-
-  getById: async (hostId: string): Promise<Host> => {
-    const response = await apiClient.get<Host>(`/api/v1/hosts/${hostId}`);
-    return response.data;
-  },
-
-  getInventory: async (hostId: string): Promise<Software[]> => {
-    const response = await apiClient.get<Software[]>(`/api/v1/hosts/${hostId}/inventory`);
-    return response.data;
-  },
-};
-
-// Vulnerabilities
-export const vulnerabilitiesAPI = {
-  getAll: async (params?: { search?: string; skip?: number; limit?: number; severity?: string; published?: string }): Promise<VulnerabilityCollection> => {
-    const searchParams = new URLSearchParams();
-    
-    if (params?.search) {
-      searchParams.append('search', params.search);
-    }
-    if (params?.skip !== undefined) {
-      searchParams.append('skip', params.skip.toString());
-    }
-    if (params?.limit) {
-      searchParams.append('limit', params.limit.toString());
-    }
-    if (params?.severity) {
-      searchParams.append('severity', params.severity);
-    }
-    if (params?.published) {
-      searchParams.append('published', params.published);
-    }
-    
-    const response = await apiClient.get(`/api/v1/vulnerabilities/?${searchParams}`);
-    return response.data;
-  },
-
-  getById: async (cveId: string): Promise<Vulnerability> => {
-    const response = await apiClient.get(`/api/v1/vulnerabilities/${cveId}`);
-    return response.data;
-  },
-};
-
 // Workflows
 export const workflowAPI = {
   getAll: async (params?: { status?: WorkflowStatus; enabled?: boolean; skip?: number; limit?: number }): Promise<Workflow[]> => {
@@ -559,6 +484,85 @@ export const workflowAPI = {
 
   getStats: async (): Promise<any> => {
     const response = await apiClient.get('/api/v1/workflows/stats/');
+    return response.data;
+  },
+};
+// Users API
+export const usersAPI = {
+  list: async (params?: { skip?: number; limit?: number }): Promise<User[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    const url = searchParams.toString() ? `/api/v1/users/?${searchParams}` : '/api/v1/users/';
+    const response = await apiClient.get<User[]>(url);
+    return response.data;
+  },
+
+  create: async (payload: CreateUserRequest): Promise<User> => {
+    const response = await apiClient.post<User>('/api/v1/users/', payload);
+    return response.data;
+  },
+
+  updateRole: async (username: string, role: Role): Promise<User> => {
+    const response = await apiClient.put<User>(`/api/v1/users/${encodeURIComponent(username)}/role`, { role });
+    return response.data;
+  },
+
+  delete: async (username: string): Promise<void> => {
+    await apiClient.delete(`/api/v1/users/${encodeURIComponent(username)}`);
+  },
+};
+
+// Hosts
+export const hostsAPI = {
+  getAll: async (): Promise<Host[]> => {
+    const response = await apiClient.get<Host[]>('/api/v1/hosts/');
+    return response.data;
+  },
+
+  getById: async (hostId: string): Promise<Host> => {
+    const response = await apiClient.get<Host>(`/api/v1/hosts/${hostId}`);
+    return response.data;
+  },
+
+  getInventory: async (hostId: string): Promise<Software[]> => {
+    const response = await apiClient.get<Software[]>(`/api/v1/hosts/${hostId}/inventory`);
+    return response.data;
+  },
+};
+
+// Vulnerabilities
+export const vulnerabilitiesAPI = {
+  getAll: async (params?: { search?: string; skip?: number; limit?: number; severity?: string; published?: string }): Promise<VulnerabilityCollection> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.search) {
+      searchParams.append('search', params.search);
+    }
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    if (params?.severity) {
+      searchParams.append('severity', params.severity);
+    }
+    if (params?.published) {
+      searchParams.append('published', params.published);
+    }
+    
+    const response = await apiClient.get(`/api/v1/vulnerabilities/?${searchParams}`);
+    return response.data;
+  },
+
+  getById: async (cveId: string): Promise<Vulnerability> => {
+    const response = await apiClient.get(`/api/v1/vulnerabilities/${cveId}`);
+    return response.data;
+  },
+  create: async (payload: Partial<Vulnerability> & { id: string }): Promise<Vulnerability> => {
+    // Payload must follow VulnerabilityCreate on backend
+    const response = await apiClient.post(`/api/v1/vulnerabilities/`, payload);
     return response.data;
   },
 };

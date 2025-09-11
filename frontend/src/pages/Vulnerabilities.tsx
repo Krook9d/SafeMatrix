@@ -30,6 +30,10 @@ import {
   Fade,
   Grow,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Search,
@@ -42,6 +46,7 @@ import {
   Shield,
   TrendingUp,
   Computer,
+  Add,
 } from '@mui/icons-material';
 import type { VulnerabilityCollection, Vulnerability } from '../services/api';
 import { vulnerabilitiesAPI } from '../services/api';
@@ -60,6 +65,18 @@ const Vulnerabilities: React.FC = () => {
   const [severityFilter, setSeverityFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [kpiSeverity, setKpiSeverity] = useState<{CRITICAL?: number; HIGH?: number; MEDIUM?: number; LOW?: number}>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  // Form fields for manual creation
+  const [newId, setNewId] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newBaseScore, setNewBaseScore] = useState<string>('');
+  const [newBaseSeverity, setNewBaseSeverity] = useState<string>('MEDIUM');
+  const [newPublished, setNewPublished] = useState<string>('');
+  const [newLastModified, setNewLastModified] = useState<string>('');
+  const [newStatus, setNewStatus] = useState<string>('Analyzed');
+  const [newReferenceUrl, setNewReferenceUrl] = useState<string>('');
 
   const itemsPerPage = 100;
   const navigate = useNavigate();
@@ -288,23 +305,40 @@ const Vulnerabilities: React.FC = () => {
             <Security />
             Vulnerabilities ({total.toLocaleString()})
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={fetchVulnerabilities}
-            disabled={loading}
-            className="filter-button"
-            sx={{
-              borderColor: theme.palette.error.main,
-              color: theme.palette.error.main,
-              '&:hover': {
-                borderColor: theme.palette.error.dark,
-                bgcolor: alpha(theme.palette.error.main, 0.05)
-              }
-            }}
-          >
-            Refresh
-          </Button>
+          <Box display="flex" gap={2}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={fetchVulnerabilities}
+              disabled={loading}
+              className="filter-button"
+              sx={{
+                borderColor: theme.palette.error.main,
+                color: theme.palette.error.main,
+                '&:hover': {
+                  borderColor: theme.palette.error.dark,
+                  bgcolor: alpha(theme.palette.error.main, 0.05)
+                }
+              }}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                // Pre-fill ISO dates if empty for convenience
+                const nowIso = new Date().toISOString();
+                if (!newPublished) setNewPublished(nowIso);
+                if (!newLastModified) setNewLastModified(nowIso);
+                setCreateError(null);
+                setCreateOpen(true);
+              }}
+              sx={{ bgcolor: theme.palette.error.main, '&:hover': { bgcolor: theme.palette.error.dark } }}
+            >
+              Add Vulnerability
+            </Button>
+          </Box>
         </Box>
       </Fade>
 
@@ -694,6 +728,122 @@ const Vulnerabilities: React.FC = () => {
           </Box>
         </Fade>
       )}
+
+      {/* Create Vulnerability Dialog */}
+      <Dialog open={createOpen} onClose={() => !createSubmitting && setCreateOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Add Vulnerability (manual)</DialogTitle>
+        <DialogContent dividers>
+          {createError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>
+          )}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField label="CVE ID" fullWidth required value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="CVE-2025-12345" />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Status" fullWidth required value={newStatus} onChange={(e) => setNewStatus(e.target.value)} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="English Description" fullWidth required multiline minRows={3} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField label="CVSS Base Score (0.0 - 10.0)" type="number" inputProps={{ step: '0.1', min: 0, max: 10 }} fullWidth required value={newBaseScore} onChange={(e) => setNewBaseScore(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>CVSS Severity</InputLabel>
+                <Select label="CVSS Severity" value={newBaseSeverity} onChange={(e) => setNewBaseSeverity(String(e.target.value))}>
+                  <MenuItem value="CRITICAL">Critical</MenuItem>
+                  <MenuItem value="HIGH">High</MenuItem>
+                  <MenuItem value="MEDIUM">Medium</MenuItem>
+                  <MenuItem value="LOW">Low</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField label="Reference URL" type="url" fullWidth required value={newReferenceUrl} onChange={(e) => setNewReferenceUrl(e.target.value)} placeholder="https://example.com/advisory" />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Published (ISO)" fullWidth required value={newPublished} onChange={(e) => setNewPublished(e.target.value)} placeholder={new Date().toISOString()} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Last Modified (ISO)" fullWidth required value={newLastModified} onChange={(e) => setNewLastModified(e.target.value)} placeholder={new Date().toISOString()} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateOpen(false)} disabled={createSubmitting}>Cancel</Button>
+          <Button variant="contained" disabled={createSubmitting} onClick={async () => {
+            setCreateError(null);
+            // Basic validation
+            if (!newId || !newDescription || !newBaseScore || !newPublished || !newLastModified || !newReferenceUrl) {
+              setCreateError('Please fill all required fields.');
+              return;
+            }
+            // Quick URL validation
+            try {
+              const u = new URL(newReferenceUrl);
+              if (!u.protocol.startsWith('http')) throw new Error('Invalid protocol');
+            } catch {
+              setCreateError('Reference URL must be a valid http(s) URL');
+              return;
+            }
+            const baseScoreNum = parseFloat(newBaseScore);
+            if (isNaN(baseScoreNum) || baseScoreNum < 0 || baseScoreNum > 10) {
+              setCreateError('Base score must be between 0.0 and 10.0');
+              return;
+            }
+            setCreateSubmitting(true);
+            try {
+              const payload: any = {
+                id: newId.trim(),
+                sourceIdentifier: 'manual',
+                published: newPublished,
+                lastModified: newLastModified,
+                vulnStatus: newStatus,
+                descriptions: [{ lang: 'en', value: newDescription.trim() }],
+                metrics: {
+                  cvssMetricV31: [
+                    {
+                      source: 'MANUAL',
+                      type: 'Primary',
+                      cvssData: {
+                        version: '3.1',
+                        vectorString: '',
+                        baseScore: baseScoreNum,
+                        baseSeverity: newBaseSeverity,
+                      },
+                      exploitabilityScore: 0,
+                      impactScore: 0,
+                    },
+                  ],
+                },
+                weaknesses: [],
+                configurations: [],
+                references: [{ url: newReferenceUrl, source: 'MANUAL' }],
+              };
+              await vulnerabilitiesAPI.create(payload);
+              setCreateOpen(false);
+              // reset form
+              setNewId('');
+              setNewDescription('');
+              setNewBaseScore('');
+              setNewBaseSeverity('MEDIUM');
+              setNewPublished('');
+              setNewLastModified('');
+              setNewStatus('Analyzed');
+              setNewReferenceUrl('');
+              // refresh list
+              fetchVulnerabilities();
+            } catch (e: any) {
+              console.error(e);
+              setCreateError(e?.response?.data?.detail || 'Failed to create vulnerability');
+            } finally {
+              setCreateSubmitting(false);
+            }
+          }}>Create</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

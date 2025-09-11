@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from opensearchpy import OpenSearch
 from typing import Optional
 
 from backend.core.dependencies import get_opensearch_client
 from backend.crud import vulnerability as crud_vulnerability
 from backend.crud.vulnerability import get_vulnerabilities
-from backend.schemas.vulnerability import VulnerabilityCollection
+from backend.schemas.vulnerability import VulnerabilityCollection, VulnerabilityCreate
 
 router = APIRouter()
 
@@ -44,7 +44,45 @@ async def get_vulnerability_detail(
     
     vulnerability = get_vulnerability_by_id(client, cve_id)
     if not vulnerability:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Vulnerability not found")
     
-    return vulnerability 
+    return vulnerability
+
+
+@router.post("/")
+async def create_vulnerability(
+    payload: VulnerabilityCreate,
+    client: OpenSearch = Depends(get_opensearch_client)
+):
+    """Create a new vulnerability document manually, enforcing NVD-like structure.
+
+    - Validates required fields (CVE-like id, English description, CVSS metrics).
+    - Inserts into OpenSearch using the same enrichment path as NVD sync.
+    - Returns the enriched stored document.
+    """
+    try:
+        # Prepare document
+        doc = payload.dict()
+        # Default sourceIdentifier if missing
+        if not doc.get("sourceIdentifier"):
+            doc["sourceIdentifier"] = "manual"
+
+        # Insert via bulk path for consistent enrichment and workflow trigger
+        result = crud_vulnerability.bulk_insert_vulnerabilities(client, [doc], trigger_workflows=True)
+        failed = result.get("failed") if isinstance(result, dict) else None
+        if failed:
+            # Extract first error and expose a readable message
+            err = failed[0].get('index', {}).get('error', {}) if isinstance(failed, list) else {}
+            reason = err.get('reason') or str(err)
+            raise HTTPException(status_code=400, detail=f"Indexing error: {reason}")
+
+        # Fetch back enriched
+        from backend.crud.vulnerability import get_vulnerability_by_id
+        enriched = get_vulnerability_by_id(client, payload.id)
+        if not enriched:
+            raise HTTPException(status_code=500, detail="Failed to retrieve created vulnerability")
+        return enriched
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
