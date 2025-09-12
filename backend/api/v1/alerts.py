@@ -4,7 +4,7 @@ from opensearchpy import OpenSearch
 
 from backend.core.dependencies import get_opensearch_client, get_current_user
 from backend.schemas import user as schemas_user
-from backend.schemas.alert import AlertList
+from backend.schemas.alert import AlertList, Alert
 from backend.crud import alert as crud_alert
 
 router = APIRouter()
@@ -32,6 +32,19 @@ def list_alerts(
         limit=limit,
     )
     return AlertList(**result)
+
+
+@router.get("/alerts/{alert_id}", response_model=Alert)
+def get_alert_by_id(
+    *,
+    client: OpenSearch = Depends(get_opensearch_client),
+    alert_id: str,
+    current_user: schemas_user.User = Depends(get_current_user),
+):
+    item = crud_alert.get_alert_by_id(client, alert_id=alert_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return Alert(**item)
 
 
 @router.put("/alerts/{alert_id}/status")

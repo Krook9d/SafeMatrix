@@ -24,6 +24,7 @@ import AdminUsers from './pages/AdminUsers';
 import Settings from './pages/Settings';
 import AuditLogs from './pages/AuditLogs';
 import Alerts from './pages/Alerts';
+import AlertDetail from './pages/AlertDetail';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -247,6 +248,7 @@ const App: React.FC = () => {
               <Route path="vulnerabilities" element={<Vulnerabilities />} />
               <Route path="vulnerabilities/:cveId" element={<VulnerabilityDetail />} />
               <Route path="alerts" element={<Alerts />} />
+              <Route path="alerts/:alertId" element={<AlertDetail />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="dsl-query" element={<DSLQuery />} />
               <Route path="workflows" element={<Workflows />} />

@@ -715,6 +715,10 @@ export const alertsAPI = {
     const response = await apiClient.get<AlertListResponse>(url);
     return response.data;
   },
+  getById: async (alertId: string): Promise<AlertItem> => {
+    const response = await apiClient.get<AlertItem>(`/api/v1/alerts/${encodeURIComponent(alertId)}`);
+    return response.data;
+  },
   updateStatus: async (alertId: string, status: AlertStatus): Promise<{ success: boolean }> => {
     const response = await apiClient.put<{ success: boolean }>(`/api/v1/alerts/${alertId}/status?status=${encodeURIComponent(status)}`);
     return response.data;

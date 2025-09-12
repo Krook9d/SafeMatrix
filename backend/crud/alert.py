@@ -118,6 +118,23 @@ def list_alerts(
         return {"total": 0, "items": []}
 
 
+def get_alert_by_id(client: OpenSearch, *, alert_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        res = client.get(index=INDEX_ALERTS, id=alert_id)
+        if not res.get("found"):
+            return None
+        src = res.get("_source", {})
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if "created_at" not in src:
+            src["created_at"] = now
+        if "updated_at" not in src:
+            src["updated_at"] = src.get("created_at", now)
+        src["_id"] = res.get("_id") or alert_id
+        return src
+    except Exception:
+        return None
+
+
 def update_alert_status(client: OpenSearch, *, alert_id: str, status: str) -> bool:
     try:
         client.update(index=INDEX_ALERTS, id=alert_id, body={"doc": {"status": status, "updated_at": datetime.datetime.now(datetime.timezone.utc)}}, refresh=True)

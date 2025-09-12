@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import { Refresh, CheckCircle, DoneAll, OpenInNew } from '@mui/icons-material';
 import { alertsAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import type { AlertItem, AlertListResponse, AlertStatus } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 // Use native Date formatting to avoid extra dependency
@@ -35,6 +36,7 @@ const statusColors: Record<AlertStatus, 'default' | 'success' | 'warning' | 'inf
 
 const AlertsPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ const AlertsPage: React.FC = () => {
   const [total, setTotal] = useState(0);
 
   // Filters and pagination
-  const [status, setStatus] = useState<AlertStatus | ''>('');
+  const [status, setStatus] = useState<AlertStatus | ''>('open');
   const [hostId, setHostId] = useState('');
   const [software, setSoftware] = useState('');
   const [cveId, setCveId] = useState('');
@@ -156,7 +158,7 @@ const AlertsPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {alerts.map((a) => (
-                      <TableRow key={a._id} hover>
+                      <TableRow key={a._id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/alerts/${encodeURIComponent(a._id)}`)}>
                         <TableCell>
                           <Chip label={a.status} color={statusColors[a.status] || 'default'} size="small" />
                         </TableCell>
@@ -168,7 +170,7 @@ const AlertsPage: React.FC = () => {
                             <Typography variant="body2">{a.cve_id}</Typography>
                             {a.url && (
                               <Tooltip title="Open reference">
-                                <IconButton size="small" component="a" href={a.url} target="_blank" rel="noopener noreferrer">
+                                <IconButton size="small" component="a" href={a.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                                   <OpenInNew fontSize="inherit" />
                                 </IconButton>
                               </Tooltip>
@@ -180,14 +182,14 @@ const AlertsPage: React.FC = () => {
                         <TableCell align="right">
                           <Tooltip title="Acknowledge">
                             <span>
-                              <IconButton size="small" onClick={() => handleUpdateStatus(a._id, 'acknowledged')} disabled={a.status !== 'open'}>
+                              <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(a._id, 'acknowledged'); }} disabled={a.status !== 'open'}>
                                 <CheckCircle fontSize="small" />
                               </IconButton>
                             </span>
                           </Tooltip>
                           <Tooltip title="Resolve">
                             <span>
-                              <IconButton size="small" onClick={() => handleUpdateStatus(a._id, 'resolved')} disabled={a.status === 'resolved'}>
+                              <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(a._id, 'resolved'); }} disabled={a.status === 'resolved'}>
                                 <DoneAll fontSize="small" />
                               </IconButton>
                             </span>
