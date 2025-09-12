@@ -565,6 +565,10 @@ export const vulnerabilitiesAPI = {
     const response = await apiClient.post(`/api/v1/vulnerabilities/`, payload);
     return response.data;
   },
+  update: async (cveId: string, payload: Partial<Vulnerability>): Promise<Vulnerability> => {
+    const response = await apiClient.put(`/api/v1/vulnerabilities/${encodeURIComponent(cveId)}`, payload);
+    return response.data;
+  },
 };
 
 // Connectors

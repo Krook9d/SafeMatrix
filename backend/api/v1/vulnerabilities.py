@@ -86,3 +86,23 @@ async def create_vulnerability(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{cve_id}")
+async def update_vulnerability_endpoint(
+    cve_id: str,
+    payload: dict,
+    client: OpenSearch = Depends(get_opensearch_client)
+):
+    """Update an existing vulnerability (partial update allowed),
+    then re-index using enrichment and re-trigger workflows and alerts.
+
+    This treats an update as an ingest, to keep downstream processing consistent.
+    """
+    try:
+        updated = crud_vulnerability.update_vulnerability(client, cve_id, payload, trigger_workflows=True)
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
