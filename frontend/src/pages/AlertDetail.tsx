@@ -13,10 +13,11 @@ import {
   MenuItem,
   CircularProgress,
   Alert as MuiAlert,
+  Avatar,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { alertsAPI, hostsAPI, vulnerabilitiesAPI, workflowAPI, type AlertItem, type Workflow } from '../services/api';
-import { OpenInNew } from '@mui/icons-material';
+import { OpenInNew, ArrowBack, Computer, BugReport, Security } from '@mui/icons-material';
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   open: 'warning',
@@ -40,6 +41,15 @@ const AlertDetail: React.FC = () => {
   const [execBusy, setExecBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [execMsg, setExecMsg] = useState<string | null>(null);
+
+  const handleBack = () => {
+    // Try to go back, otherwise go to alerts list
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/alerts');
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -116,20 +126,39 @@ const AlertDetail: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h4">Alert {alert._id}</Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-          <Button variant="outlined" onClick={() => navigate('/alerts')}>Back to Alerts</Button>
-          <Button variant="contained" disabled={statusBusy || alert.status !== 'open'} onClick={() => handleStatus('acknowledged')}>Acknowledge</Button>
-          <Button variant="contained" color="success" disabled={statusBusy || alert.status === 'resolved'} onClick={() => handleStatus('resolved')}>Resolve</Button>
-        </Stack>
-      </Stack>
+      {/* Header */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <CardContent sx={{ py: 2.5 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" gap={2}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Avatar sx={{ bgcolor: 'primary.main' }}>
+                <Security sx={{ color: '#fff' }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>Alert</Typography>
+                <Typography variant="body2" color="text.secondary">{alert._id}</Typography>
+              </Box>
+              <Chip size="small" label={alert.status} color={statusColors[alert.status] || 'default'} sx={{ ml: 1 }} />
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <Button variant="outlined" startIcon={<ArrowBack />} onClick={handleBack}>Back to Alerts</Button>
+              <Button variant="contained" disabled={statusBusy || alert.status !== 'open'} onClick={() => handleStatus('acknowledged')}>Acknowledge</Button>
+              <Button variant="contained" color="success" disabled={statusBusy || alert.status === 'resolved'} onClick={() => handleStatus('resolved')}>Resolve</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 1 }}>Alert</Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                  <Security sx={{ color: '#fff' }} />
+                </Avatar>
+                <Typography variant="h6">Alert</Typography>
+              </Stack>
               <Divider sx={{ mb: 2 }} />
               <Stack spacing={1}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -160,9 +189,14 @@ const AlertDetail: React.FC = () => {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 1 }}>Host</Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                  <Computer sx={{ color: '#fff' }} />
+                </Avatar>
+                <Typography variant="h6">Host</Typography>
+              </Stack>
               <Divider sx={{ mb: 2 }} />
               {host ? (
                 <Stack spacing={1}>
@@ -184,6 +218,9 @@ const AlertDetail: React.FC = () => {
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>Host ID:</Typography>
                     <Typography variant="body2">{alert.host_id}</Typography>
                   </Stack>
+                  <Button size="small" sx={{ mt: 1 }} variant="outlined" onClick={() => navigate(`/hosts/${encodeURIComponent(alert.host_id)}`)}>
+                    Go to Host
+                  </Button>
                 </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">No host details found</Typography>
@@ -193,9 +230,14 @@ const AlertDetail: React.FC = () => {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 1 }}>Vulnerability</Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Avatar sx={{ bgcolor: 'error.main' }}>
+                  <BugReport sx={{ color: '#fff' }} />
+                </Avatar>
+                <Typography variant="h6">Vulnerability</Typography>
+              </Stack>
               <Divider sx={{ mb: 2 }} />
               {vuln ? (
                 <Stack spacing={1}>
@@ -218,7 +260,7 @@ const AlertDetail: React.FC = () => {
         </Grid>
 
         <Grid item xs={12}>
-          <Card>
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 1 }}>Actions</Typography>
               <Divider sx={{ mb: 2 }} />
