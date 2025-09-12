@@ -8,6 +8,7 @@ from . import host as crud_host
 from ..crud.vulnerability import INDEX_VULNERABILITIES
 from ..utils.cpe_utils import parse_cpe
 from ..utils.version_utils import in_version_range
+from ..crud import alert as crud_alert
 
 
 def get_inventories(
@@ -104,6 +105,11 @@ def update_inventory(client: OpenSearch, *, inventory_id: str, inventory_in: Inv
         )
         updated_doc = response.get("get", {}).get("_source", {})
         updated_doc["_id"] = response["_id"]
+        # Generate alerts for this inventory item (if it contains vulnerabilities)
+        try:
+            crud_alert.generate_alerts_for_inventory_item(client, {**updated_doc, "_id": response["_id"]})
+        except Exception:
+            pass
         return updated_doc
     except NotFoundError:
         return None
@@ -158,6 +164,11 @@ def create_inventory(client: OpenSearch, *, inventory_in: InventoryCreate) -> di
     )
     
     document["_id"] = response["_id"]
+    # Generate alerts for this created inventory item
+    try:
+        crud_alert.generate_alerts_for_inventory_item(client, document)
+    except Exception:
+        pass
     return document 
 
 
@@ -354,6 +365,13 @@ def sync_host_inventory(client: OpenSearch, *, host_id: str, new_software_list: 
                         body={"doc": update_data},
                         refresh=True
                     )
+                    # Generate alerts after update
+                    try:
+                        inv_doc = {**existing_item, **update_data}
+                        inv_doc["_id"] = existing_item["_id"]
+                        crud_alert.generate_alerts_for_inventory_item(client, inv_doc)
+                    except Exception:
+                        pass
                     stats["updated"] += 1
                 except Exception as e:
                     print(f"Debug: Failed to update {software_name}: {e}")
@@ -368,6 +386,12 @@ def sync_host_inventory(client: OpenSearch, *, host_id: str, new_software_list: 
                             body={"doc": {"vulnerabilities": backfill_vulns, "updated_at": now}},
                             refresh=True
                         )
+                        try:
+                            inv_doc = {**existing_item, "vulnerabilities": backfill_vulns, "updated_at": now}
+                            inv_doc["_id"] = existing_item["_id"]
+                            crud_alert.generate_alerts_for_inventory_item(client, inv_doc)
+                        except Exception:
+                            pass
                 except Exception as e:
                     print(f"Debug: Failed to backfill vulns for {software_name}: {e}")
                 stats["unchanged"] += 1
@@ -391,6 +415,16 @@ def sync_host_inventory(client: OpenSearch, *, host_id: str, new_software_list: 
                     body=inventory_data,
                     refresh=True
                 )
+                try:
+                    # Add generated alerts for this new software item
+                    # Need the assigned _id; fetch last created quickly
+                    res = client.search(index=INDEX_INVENTORIES, body={"query": {"bool": {"must": [{"term": {"host_id": host_id}}, {"term": {"software_name.keyword": software_name}}]}}, "sort": [{"created_at": {"order": "desc"}}], "size": 1})
+                    if res.get("hits", {}).get("hits"):
+                        last = res["hits"]["hits"][0]
+                        doc_with_id = {**inventory_data, "_id": last.get("_id")}
+                        crud_alert.generate_alerts_for_inventory_item(client, doc_with_id)
+                except Exception:
+                    pass
                 stats["added"] += 1
             except Exception as e:
                 print(f"Debug: Failed to add {software_name}: {e}")

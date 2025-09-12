@@ -80,6 +80,7 @@ client = OpenSearch(
 INDEX_HOSTS = "hosts"
 INDEX_INVENTORIES = "inventories"
 INDEX_VULNERABILITIES = "vulnerabilities"
+INDEX_ALERTS = "alerts"
 
 # -----------------------------------------------------------------------------
 # Mappings
@@ -99,6 +100,23 @@ HOSTS_MAPPING: Dict[str, Any] = {
                 "version": {"type": "keyword"},
             }
         },
+        "created_at": {"type": "date"},
+        "updated_at": {"type": "date"},
+    }
+}
+
+ALERTS_MAPPING: Dict[str, Any] = {
+    "properties": {
+        "host_id": {"type": "keyword"},
+        "software_name": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+        "version": {"type": "keyword"},
+        "cve_id": {"type": "keyword"},
+        "severity": {"type": "keyword"},
+        "score": {"type": "float"},
+        "status": {"type": "keyword"},
+        "inventory_id": {"type": "keyword"},
+        "description": {"type": "text"},
+        "url": {"type": "keyword"},
         "created_at": {"type": "date"},
         "updated_at": {"type": "date"},
     }
@@ -212,6 +230,7 @@ def create_indexes() -> None:
         INDEX_HOSTS: HOSTS_MAPPING,
         INDEX_INVENTORIES: INVENTORIES_MAPPING,
         INDEX_VULNERABILITIES: VULNERABILITIES_MAPPING,
+        INDEX_ALERTS: ALERTS_MAPPING,
     }
     for index_name, mapping in indices_to_create.items():
         _ensure_index(index_name, mapping)

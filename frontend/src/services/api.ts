@@ -674,6 +674,49 @@ export const opensearchAPI = {
   },
 };
 
+// Alerts
+export type AlertStatus = 'open' | 'acknowledged' | 'resolved';
+
+export interface AlertItem {
+  _id: string;
+  host_id: string;
+  software_name: string;
+  version: string;
+  cve_id: string;
+  severity?: string;
+  score?: number;
+  status: AlertStatus;
+  inventory_id?: string;
+  description?: string;
+  url?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface AlertListResponse {
+  total: number;
+  items: AlertItem[];
+}
+
+export const alertsAPI = {
+  list: async (params?: { status?: AlertStatus; host_id?: string; software?: string; cve_id?: string; skip?: number; limit?: number }): Promise<AlertListResponse> => {
+    const sp = new URLSearchParams();
+    if (params?.status) sp.append('status', params.status);
+    if (params?.host_id) sp.append('host_id', params.host_id);
+    if (params?.software) sp.append('software', params.software);
+    if (params?.cve_id) sp.append('cve_id', params.cve_id);
+    if (params?.skip !== undefined) sp.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) sp.append('limit', params.limit.toString());
+    const url = sp.toString() ? `/api/v1/alerts/?${sp}` : '/api/v1/alerts/';
+    const response = await apiClient.get<AlertListResponse>(url);
+    return response.data;
+  },
+  updateStatus: async (alertId: string, status: AlertStatus): Promise<{ success: boolean }> => {
+    const response = await apiClient.put<{ success: boolean }>(`/api/v1/alerts/${alertId}/status?status=${encodeURIComponent(status)}`);
+    return response.data;
+  }
+};
+
 // Fonction utilitaire pour vérifier si l'utilisateur est connecté
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('access_token');

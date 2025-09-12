@@ -21,6 +21,7 @@ from .api.v1 import opensearch as opensearch_router
 from .api.v1 import workflows as workflows_router
 from .api.v1 import connectors as connectors_router
 from .api.v1 import audit_logs as audit_logs_router
+from .api.v1 import alerts as alerts_router
 from .core.config import settings
 from .crud import user as crud_user
 from .schemas import user as schemas_user
@@ -124,6 +125,7 @@ app.include_router(opensearch_router.router, prefix="/api/v1/opensearch", tags=[
 app.include_router(workflows_router.router, prefix="/api/v1/workflows", tags=["workflows"])
 app.include_router(connectors_router.router, prefix="/api/v1/connectors", tags=["connectors"])
 app.include_router(audit_logs_router.router, prefix="/api/v1", tags=["audit-logs"])
+app.include_router(alerts_router.router, prefix="/api/v1", tags=["alerts"])
 
 @app.get("/")
 def read_root():

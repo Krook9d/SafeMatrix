@@ -156,6 +156,33 @@ def process_vulnerability_batch_task(self, vulnerabilities_data: list):
         logger.error(f"Error processing batch: {exc}")
         raise self.retry(exc=exc, countdown=120, max_retries=2)
 
+@celery_app.task(bind=True, name="alerts.process_from_vulnerabilities")
+def process_alerts_from_vulnerabilities_task(self, vulnerabilities_data: list):
+    """
+    Task to generate alerts based on a batch of vulnerabilities.
+    """
+    try:
+        # Lazy import to avoid circular deps
+        try:
+            from backend.core.opensearch_client import get_opensearch_client
+            from backend.crud.alert import generate_alerts_for_vulnerability
+        except ImportError:
+            from .opensearch_client import get_opensearch_client
+            from ..crud.alert import generate_alerts_for_vulnerability
+
+        client = get_opensearch_client()
+        total = 0
+        for vuln in vulnerabilities_data or []:
+            try:
+                total += generate_alerts_for_vulnerability(client, vuln)
+            except Exception as e:
+                logger.error(f"Alert generation error for {vuln.get('id')}: {e}")
+        logger.info(f"Alert generation completed. Alerts upserted: {total}")
+        return {"alerts_generated": total}
+    except Exception as exc:
+        logger.error(f"Error generating alerts from vulnerabilities: {exc}")
+        raise self.retry(exc=exc, countdown=120, max_retries=2)
+
 class WorkflowQueue:
     """
     Workflow queue management service.

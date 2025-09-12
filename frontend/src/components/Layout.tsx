@@ -35,6 +35,7 @@ import {
   AdminPanelSettings,
   ExpandMore,
   ExpandLess,
+  NotificationsActive,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,6 +54,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Hosts', icon: <Computer />, path: '/hosts' },
   { text: 'Vulnerabilities', icon: <Security />, path: '/vulnerabilities' },
+  { text: 'Alerts', icon: <NotificationsActive />, path: '/alerts' },
   { text: 'Inventory', icon: <Inventory2 />, path: '/inventory' },
   { text: 'Workflows', icon: <AccountTree />, path: '/workflows' },
   { text: 'Connectors', icon: <Settings />, path: '/connectors' },

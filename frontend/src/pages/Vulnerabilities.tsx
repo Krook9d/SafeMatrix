@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -54,6 +54,28 @@ import { useNavigate } from 'react-router-dom';
 import { getAffectedProductsSummary } from '../utils/cpeUtils';
 import './Vulnerabilities.css';
 
+// Simple browser-safe random ID generator for matchCriteriaId
+function genRandomId(): string {
+  try {
+    // Modern browsers
+    // @ts-ignore
+    if (typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function') {
+      // @ts-ignore
+      return (crypto as any).randomUUID();
+    }
+    // Fallback using getRandomValues
+    // @ts-ignore
+    if (typeof crypto !== 'undefined' && typeof (crypto as any).getRandomValues === 'function') {
+      const arr = new Uint32Array(4);
+      // @ts-ignore
+      (crypto as any).getRandomValues(arr);
+      return Array.from(arr).map(v => v.toString(16).padStart(8, '0')).join('');
+    }
+  } catch {}
+  // Last resort
+  return 'id-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+}
+
 const Vulnerabilities: React.FC = () => {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,10 +95,16 @@ const Vulnerabilities: React.FC = () => {
   const [newDescription, setNewDescription] = useState('');
   const [newBaseScore, setNewBaseScore] = useState<string>('');
   const [newBaseSeverity, setNewBaseSeverity] = useState<string>('MEDIUM');
+  const [newVector, setNewVector] = useState<string>('');
+  const [newExploitability, setNewExploitability] = useState<string>('');
+  const [newImpact, setNewImpact] = useState<string>('');
   const [newPublished, setNewPublished] = useState<string>('');
   const [newLastModified, setNewLastModified] = useState<string>('');
   const [newStatus, setNewStatus] = useState<string>('Analyzed');
   const [newReferenceUrl, setNewReferenceUrl] = useState<string>('');
+  const [newAdditionalRefs, setNewAdditionalRefs] = useState<string>('');
+  // Affected products (CPE URIs, one per line)
+  const [affectedCPEs, setAffectedCPEs] = useState<string>('');
 
   const itemsPerPage = 100;
   const navigate = useNavigate();
@@ -211,6 +239,158 @@ const Vulnerabilities: React.FC = () => {
   const criticalCount = kpiSeverity.CRITICAL ?? 0;
   const highCount = kpiSeverity.HIGH ?? 0;
 
+  // Compute pagination and memoized table BEFORE any early returns (Rules of Hooks)
+  const tableContent = useMemo(() => (
+    <Fade in timeout={1800}>
+      <TableContainer component={Paper} className="vulnerability-table-container">
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+              <TableCell sx={{ fontWeight: 600 }}>CVE ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Affected Products</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>CVSS Score</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Published</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>References</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {(vulnerabilities || []).map((vuln, index) => {
+              const description = vuln.descriptions?.find(d => d.lang === 'en')?.value ||
+                                 vuln.descriptions?.[0]?.value ||
+                                 vuln.description ||
+                                 'No description available';
+
+              const baseScore = vuln.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore ||
+                               vuln.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore ||
+                               vuln.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore ||
+                               vuln.score;
+
+              const severity = getSeverityLabel(baseScore);
+              const productsSummary = getAffectedProductsSummary(vuln.configurations || []);
+
+              return (
+                <Grow in timeout={2000 + index * 100} key={vuln.id}>
+                  <TableRow 
+                    hover
+                    onClick={() => handleRowClick(vuln.id)}
+                    className="vulnerability-table-row"
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.error.main, 0.05)
+                      }
+                    }}
+                  >
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Avatar sx={{ 
+                          bgcolor: getSeverityColorHex(severity),
+                          width: 32,
+                          height: 32
+                        }}>
+                          {getSeverityIcon(severity)}
+                        </Avatar>
+                        <Typography variant="subtitle2" color="primary" fontWeight="medium">
+                          {vuln.id}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography 
+                        variant="body2" 
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: 350,
+                        }}
+                      >
+                        {description}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title={productsSummary}>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Computer sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 1,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: 200,
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            {productsSummary}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      {baseScore ? (
+                        <Chip
+                          label={baseScore.toFixed(1)}
+                          className="severity-chip"
+                          sx={{
+                            bgcolor: getSeverityColorHex(severity),
+                            color: '#ffffff',
+                            fontWeight: 600
+                          }}
+                          size="small"
+                        />
+                      ) : (
+                        <Chip label="No Score" variant="outlined" size="small" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={severity}
+                        className="severity-chip"
+                        sx={{
+                          bgcolor: alpha(getSeverityColorHex(severity), 0.1),
+                          color: getSeverityColorHex(severity),
+                          border: `1px solid ${getSeverityColorHex(severity)}`,
+                          fontWeight: 600
+                        }}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {vuln.published ? 
+                          new Date(vuln.published).toLocaleDateString('fr-FR') : 
+                          (vuln.published_date ? new Date(vuln.published_date).toLocaleDateString('fr-FR') : 'Unknown')
+                        }
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={vuln.references?.length || 0}
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500 }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                </Grow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Fade>
+  ), [vulnerabilities, theme]);
+
+  const totalPages = Math.ceil(total / itemsPerPage);
+
   if (loading && vulnerabilities.length === 0) {
     return (
       <Box className="vulnerabilities-container" sx={{ 
@@ -279,7 +459,7 @@ const Vulnerabilities: React.FC = () => {
     );
   }
 
-  const totalPages = Math.ceil(total / itemsPerPage);
+  // Duplicate declarations removed (tableContent/totalPages are defined earlier)
 
   return (
     <Box className="vulnerabilities-container" sx={{ 
@@ -543,152 +723,8 @@ const Vulnerabilities: React.FC = () => {
         </Paper>
       </Fade>
 
-      {/* Vulnerabilities Table */}
-      <Fade in timeout={1800}>
-        <TableContainer component={Paper} className="vulnerability-table-container">
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                <TableCell sx={{ fontWeight: 600 }}>CVE ID</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Affected Products</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>CVSS Score</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Published</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>References</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(vulnerabilities || []).map((vuln, index) => {
-                const description = vuln.descriptions?.find(d => d.lang === 'en')?.value || 
-                                   vuln.descriptions?.[0]?.value || 
-                                   vuln.description || 
-                                   'No description available';
-                
-                const baseScore = vuln.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore ||
-                                 vuln.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore ||
-                                 vuln.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore ||
-                                 vuln.score;
-
-                const severity = getSeverityLabel(baseScore);
-
-                return (
-                  <Grow in timeout={2000 + index * 100} key={vuln.id}>
-                    <TableRow 
-                      hover
-                      onClick={() => handleRowClick(vuln.id)}
-                      className="vulnerability-table-row"
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.error.main, 0.05)
-                        }
-                      }}
-                    >
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Avatar sx={{ 
-                            bgcolor: getSeverityColorHex(severity),
-                            width: 32,
-                            height: 32
-                          }}>
-                            {getSeverityIcon(severity)}
-                          </Avatar>
-                          <Typography variant="subtitle2" color="primary" fontWeight="medium">
-                            {vuln.id}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography 
-                          variant="body2" 
-                          sx={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: 350,
-                          }}
-                        >
-                          {description}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={getAffectedProductsSummary(vuln.configurations || [])}>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Computer sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography 
-                              variant="body2" 
-                              color="text.secondary"
-                              sx={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 1,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: 200,
-                                fontSize: '0.875rem'
-                              }}
-                            >
-                              {getAffectedProductsSummary(vuln.configurations || [])}
-                            </Typography>
-                          </Box>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        {baseScore ? (
-                          <Chip
-                            label={baseScore.toFixed(1)}
-                            className="severity-chip"
-                            sx={{
-                              bgcolor: getSeverityColorHex(severity),
-                              color: '#ffffff',
-                              fontWeight: 600
-                            }}
-                            size="small"
-                          />
-                        ) : (
-                          <Chip label="No Score" variant="outlined" size="small" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={severity}
-                          className="severity-chip"
-                          sx={{
-                            bgcolor: alpha(getSeverityColorHex(severity), 0.1),
-                            color: getSeverityColorHex(severity),
-                            border: `1px solid ${getSeverityColorHex(severity)}`,
-                            fontWeight: 600
-                          }}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {vuln.published ? 
-                            new Date(vuln.published).toLocaleDateString('fr-FR') : 
-                            (vuln.published_date ? new Date(vuln.published_date).toLocaleDateString('fr-FR') : 'Unknown')
-                          }
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={vuln.references?.length || 0}
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  </Grow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Fade>
+      {/* Vulnerabilities Table (memoized) */}
+      {tableContent}
 
       {/* Empty State */}
       {vulnerabilities.length === 0 && !loading && (
@@ -737,22 +773,30 @@ const Vulnerabilities: React.FC = () => {
             <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>
           )}
           <Grid container spacing={2}>
+            {/* Identity and status */}
             <Grid item xs={12} sm={6}>
               <TextField label="CVE ID" fullWidth required value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="CVE-2025-12345" />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField label="Status" fullWidth required value={newStatus} onChange={(e) => setNewStatus(e.target.value)} />
             </Grid>
+
+            {/* Description */}
             <Grid item xs={12}>
               <TextField label="English Description" fullWidth required multiline minRows={3} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
             </Grid>
+
+            {/* CVSS Section */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">CVSS (v3.x)</Typography>
+            </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="CVSS Base Score (0.0 - 10.0)" type="number" inputProps={{ step: '0.1', min: 0, max: 10 }} fullWidth required value={newBaseScore} onChange={(e) => setNewBaseScore(e.target.value)} />
+              <TextField label="Base Score (0.0 - 10.0)" type="number" inputProps={{ step: '0.1', min: 0, max: 10 }} fullWidth required value={newBaseScore} onChange={(e) => setNewBaseScore(e.target.value)} />
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
-                <InputLabel>CVSS Severity</InputLabel>
-                <Select label="CVSS Severity" value={newBaseSeverity} onChange={(e) => setNewBaseSeverity(String(e.target.value))}>
+                <InputLabel>Severity</InputLabel>
+                <Select label="Severity" value={newBaseSeverity} onChange={(e) => setNewBaseSeverity(String(e.target.value))}>
                   <MenuItem value="CRITICAL">Critical</MenuItem>
                   <MenuItem value="HIGH">High</MenuItem>
                   <MenuItem value="MEDIUM">Medium</MenuItem>
@@ -761,7 +805,37 @@ const Vulnerabilities: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="Reference URL" type="url" fullWidth required value={newReferenceUrl} onChange={(e) => setNewReferenceUrl(e.target.value)} placeholder="https://example.com/advisory" />
+              <TextField label="Vector String (e.g., AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)" fullWidth value={newVector} onChange={(e) => setNewVector(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Exploitability Score (optional)" type="number" inputProps={{ step: '0.1', min: 0 }} fullWidth value={newExploitability} onChange={(e) => setNewExploitability(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Impact Score (optional)" type="number" inputProps={{ step: '0.1', min: 0 }} fullWidth value={newImpact} onChange={(e) => setNewImpact(e.target.value)} />
+            </Grid>
+
+            {/* Affected products */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">Affected Products (CPE URIs, one per line)</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                placeholder="cpe:2.3:a:vendor:product:version:*:*:*:*:*:*:*\n..."
+                fullWidth
+                multiline
+                minRows={3}
+                value={affectedCPEs}
+                onChange={(e) => setAffectedCPEs(e.target.value)}
+                helperText="Enter CPE 2.3 criteria per line. Version range fields can be left to be interpreted from CPE version."
+              />
+            </Grid>
+
+            {/* References and dates */}
+            <Grid item xs={12} sm={6}>
+              <TextField label="Primary Reference URL" type="url" fullWidth required value={newReferenceUrl} onChange={(e) => setNewReferenceUrl(e.target.value)} placeholder="https://example.com/advisory" />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Additional References (one per line)" fullWidth multiline minRows={2} value={newAdditionalRefs} onChange={(e) => setNewAdditionalRefs(e.target.value)} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField label="Published (ISO)" fullWidth required value={newPublished} onChange={(e) => setNewPublished(e.target.value)} placeholder={new Date().toISOString()} />
@@ -793,8 +867,30 @@ const Vulnerabilities: React.FC = () => {
               setCreateError('Base score must be between 0.0 and 10.0');
               return;
             }
+            const exploitabilityNum = newExploitability ? parseFloat(newExploitability) : undefined;
+            const impactNum = newImpact ? parseFloat(newImpact) : undefined;
+            if (newExploitability && isNaN(Number(newExploitability))) {
+              setCreateError('Exploitability score must be a number');
+              return;
+            }
+            if (newImpact && isNaN(Number(newImpact))) {
+              setCreateError('Impact score must be a number');
+              return;
+            }
             setCreateSubmitting(true);
             try {
+              // Build references array (primary + additional)
+              const references = [newReferenceUrl, ...newAdditionalRefs.split(/\r?\n/).map(s => s.trim()).filter(Boolean)]
+                .map(url => ({ url, source: 'MANUAL' }));
+
+              // Build configurations from CPE list
+              const cpeLines = affectedCPEs.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+              const cpeMatch = cpeLines.map((criteria) => ({
+                vulnerable: true,
+                criteria,
+                matchCriteriaId: genRandomId(),
+              }));
+
               const payload: any = {
                 id: newId.trim(),
                 sourceIdentifier: 'manual',
@@ -809,18 +905,18 @@ const Vulnerabilities: React.FC = () => {
                       type: 'Primary',
                       cvssData: {
                         version: '3.1',
-                        vectorString: '',
+                        vectorString: newVector,
                         baseScore: baseScoreNum,
                         baseSeverity: newBaseSeverity,
                       },
-                      exploitabilityScore: 0,
-                      impactScore: 0,
+                      ...(exploitabilityNum !== undefined ? { exploitabilityScore: exploitabilityNum } : {}),
+                      ...(impactNum !== undefined ? { impactScore: impactNum } : {}),
                     },
                   ],
                 },
                 weaknesses: [],
-                configurations: [],
-                references: [{ url: newReferenceUrl, source: 'MANUAL' }],
+                configurations: cpeMatch.length ? [{ nodes: [{ operator: 'OR', negate: false, cpeMatch }] }] : [],
+                references,
               };
               await vulnerabilitiesAPI.create(payload);
               setCreateOpen(false);
@@ -829,10 +925,15 @@ const Vulnerabilities: React.FC = () => {
               setNewDescription('');
               setNewBaseScore('');
               setNewBaseSeverity('MEDIUM');
+              setNewVector('');
+              setNewExploitability('');
+              setNewImpact('');
               setNewPublished('');
               setNewLastModified('');
               setNewStatus('Analyzed');
               setNewReferenceUrl('');
+              setNewAdditionalRefs('');
+              setAffectedCPEs('');
               // refresh list
               fetchVulnerabilities();
             } catch (e: any) {
