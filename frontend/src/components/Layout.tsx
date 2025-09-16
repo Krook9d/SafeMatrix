@@ -40,6 +40,7 @@ import {
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../services/api';
+import logoSafeMatrix from '../assets/connectors/logo_safematrix.svg';
 
 const drawerWidth = 240;
 
@@ -100,9 +101,32 @@ const Layout: React.FC = () => {
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar>
-        <Typography variant="h6" noWrap component="div" color="primary">
-          SafeMatrix
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box
+            component="img"
+            src={logoSafeMatrix}
+            alt="SafeMatrix logo"
+            sx={{ width: 55, height: 55, mr: 1 }}
+          />
+          <Typography 
+            variant="h6" 
+            noWrap 
+            component="div" 
+            sx={{
+              fontWeight: 800,
+              letterSpacing: 0.2,
+              lineHeight: 1,
+              fontSize: '1.25rem',
+              background: 'linear-gradient(90deg, #0EA5E9 0%, #22D3EE 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            SafeMatrix
+          </Typography>
+        </Box>
       </Toolbar>
       <Divider />
       <List>
