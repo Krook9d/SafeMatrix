@@ -676,6 +676,14 @@ export const opensearchAPI = {
     const response = await apiClient.post(`/api/v1/opensearch/query?index=${encodeURIComponent(index)}`, query);
     return response.data;
   },
+  export: async (index: string, query: any, format: 'csv' | 'ndjson'): Promise<Blob> => {
+    const response = await apiClient.post(
+      `/api/v1/opensearch/export?index=${encodeURIComponent(index)}&format=${encodeURIComponent(format)}`,
+      query,
+      { responseType: 'blob' }
+    );
+    return response.data as Blob;
+  },
 };
 
 // Alerts
