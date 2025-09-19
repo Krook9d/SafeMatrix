@@ -14,10 +14,24 @@ import {
   CircularProgress,
   Alert as MuiAlert,
   Avatar,
+  Paper,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { alertsAPI, hostsAPI, vulnerabilitiesAPI, workflowAPI, type AlertItem, type Workflow } from '../services/api';
-import { OpenInNew, ArrowBack, Computer, BugReport, Security } from '@mui/icons-material';
+import { 
+  OpenInNew, 
+  ArrowBack, 
+  Computer, 
+  BugReport, 
+  Security, 
+  Schedule,
+  Assessment,
+  Launch,
+  CheckCircle,
+  Assignment
+} from '@mui/icons-material';
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'info'> = {
   open: 'warning',
@@ -125,167 +139,409 @@ const AlertDetail: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Card sx={{ mb: 3, borderRadius: 3 }}>
-        <CardContent sx={{ py: 2.5 }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" gap={2}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                <Security sx={{ color: '#fff' }} />
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      {/* Enhanced Header */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          mb: 4, 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          color: 'white',
+          overflow: 'hidden'
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems={{ xs: 'flex-start', lg: 'center' }}>
+            {/* Left section - Alert info */}
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1 }}>
+              <Avatar sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                width: 56, 
+                height: 56,
+                backdropFilter: 'blur(10px)'
+              }}>
+                <Security sx={{ fontSize: 28 }} />
               </Avatar>
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>Alert</Typography>
-                <Typography variant="body2" color="text.secondary">{alert._id}</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Security Alert
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9, mb: 1 }}>
+                  {alert.software_name} {alert.version} • {alert.cve_id}
+                </Typography>
+                <Chip 
+                  label={alert.status.toUpperCase()} 
+                  sx={{ 
+                    bgcolor: statusColors[alert.status] === 'warning' ? 'rgba(255,193,7,0.9)' :
+                            statusColors[alert.status] === 'info' ? 'rgba(33,150,243,0.9)' :
+                            'rgba(76,175,80,0.9)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }} 
+                />
               </Box>
-              <Chip size="small" label={alert.status} color={statusColors[alert.status] || 'default'} sx={{ ml: 1 }} />
             </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              <Button variant="outlined" startIcon={<ArrowBack />} onClick={handleBack}>Back to Alerts</Button>
-              <Button variant="contained" disabled={statusBusy || alert.status !== 'open'} onClick={() => handleStatus('acknowledged')}>Acknowledge</Button>
-              <Button variant="contained" color="success" disabled={statusBusy || alert.status === 'resolved'} onClick={() => handleStatus('resolved')}>Resolve</Button>
+
+            {/* Right section - Actions */}
+            <Stack direction={{ xs: 'row', sm: 'row' }} spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+              <Button 
+                variant="outlined" 
+                startIcon={<ArrowBack />} 
+                onClick={handleBack}
+                sx={{ 
+                  borderColor: 'rgba(255,255,255,0.5)',
+                  color: 'white',
+                  '&:hover': { 
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255,255,255,0.1)'
+                  }
+                }}
+              >
+                Back
+              </Button>
+              <Button 
+                variant="contained" 
+                startIcon={<CheckCircle />}
+                disabled={statusBusy || alert.status !== 'open'} 
+                onClick={() => handleStatus('acknowledged')}
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                }}
+              >
+                Acknowledge
+              </Button>
+              <Button 
+                variant="contained" 
+                startIcon={<Assignment />}
+                disabled={statusBusy || alert.status === 'resolved'} 
+                onClick={() => handleStatus('resolved')}
+                sx={{ 
+                  bgcolor: 'rgba(76,175,80,0.8)',
+                  '&:hover': { bgcolor: 'rgba(76,175,80,1)' }
+                }}
+              >
+                Resolve
+              </Button>
             </Stack>
           </Stack>
         </CardContent>
-      </Card>
+      </Paper>
 
+      {/* Main Content Grid */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  <Security sx={{ color: '#fff' }} />
+        
+        {/* Alert Details */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card 
+            elevation={1} 
+            sx={{ 
+              borderRadius: 3, 
+              height: '100%'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                  <Security />
                 </Avatar>
-                <Typography variant="h6">Alert</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Alert Information
+                </Typography>
               </Stack>
-              <Divider sx={{ mb: 2 }} />
-              <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Status:</Typography>
-                  <Chip size="small" label={alert.status} color={statusColors[alert.status] || 'default'} />
-                </Stack>
-                <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Software:</Typography>
-                  <Typography variant="body2">{alert.software_name} {alert.version}</Typography>
-                </Stack>
-                <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>CVE:</Typography>
-                  <Typography variant="body2">{alert.cve_id}</Typography>
-                </Stack>
-                {alert.url && (
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Ref:</Typography>
-                    <Button size="small" endIcon={<OpenInNew />} component="a" href={alert.url} target="_blank" rel="noopener noreferrer">Open</Button>
+              
+              <Stack spacing={2.5}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Status
+                  </Typography>
+                  <Chip 
+                    label={alert.status} 
+                    color={statusColors[alert.status] || 'default'} 
+                    sx={{ fontWeight: 500 }}
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Affected Software
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {alert.software_name} {alert.version}
+                  </Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    CVE Identifier
+                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {alert.cve_id}
+                    </Typography>
+                    {alert.url && (
+                      <Tooltip title="View CVE details">
+                        <IconButton 
+                          size="small" 
+                          component="a" 
+                          href={alert.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          <OpenInNew fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Stack>
-                )}
-                <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Created:</Typography>
-                  <Typography variant="body2">{alert.created_at ? new Date(alert.created_at).toLocaleString() : '-'}</Typography>
-                </Stack>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Created At
+                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Schedule fontSize="small" color="action" />
+                    <Typography variant="body1">
+                      {alert.created_at ? new Date(alert.created_at).toLocaleString() : '-'}
+                    </Typography>
+                  </Stack>
+                </Box>
               </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                  <Computer sx={{ color: '#fff' }} />
+        {/* Host Information */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card 
+            elevation={1} 
+            sx={{ 
+              borderRadius: 3, 
+              height: '100%'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main', width: 40, height: 40 }}>
+                  <Computer />
                 </Avatar>
-                <Typography variant="h6">Host</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Host Information
+                </Typography>
               </Stack>
-              <Divider sx={{ mb: 2 }} />
+              
               {host ? (
-                <Stack spacing={1}>
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Host:</Typography>
-                    <Typography variant="body2">{host.hostname || host.name || host.id || alert.host_id}</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>IP:</Typography>
-                    <Typography variant="body2">{host.ip_address || '-'}</Typography>
-                  </Stack>
+                <Stack spacing={2.5}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Hostname
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {host.hostname || host.name || host.id || alert.host_id}
+                    </Typography>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      IP Address
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {host.ip_address || 'Not available'}
+                    </Typography>
+                  </Box>
+                  
                   {host.os && (
-                    <Stack direction="row" spacing={1}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>OS:</Typography>
-                      <Typography variant="body2">{host.os?.name} {host.os?.version}</Typography>
-                    </Stack>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        Operating System
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {host.os?.name} {host.os?.version}
+                      </Typography>
+                    </Box>
                   )}
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Host ID:</Typography>
-                    <Typography variant="body2">{alert.host_id}</Typography>
-                  </Stack>
-                  <Button size="small" sx={{ mt: 1 }} variant="outlined" onClick={() => navigate(`/hosts/${encodeURIComponent(alert.host_id)}`)}>
-                    Go to Host
+                  
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Host ID
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
+                      {alert.host_id}
+                    </Typography>
+                  </Box>
+                  
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<Launch />}
+                    onClick={() => navigate(`/hosts/${encodeURIComponent(alert.host_id)}`)}
+                    sx={{ mt: 1, alignSelf: 'flex-start' }}
+                  >
+                    View Host Details
                   </Button>
                 </Stack>
               ) : (
-                <Typography variant="body2" color="text.secondary">No host details found</Typography>
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Computer sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="body1" color="text.secondary">
+                    Host details not available
+                  </Typography>
+                </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'error.main' }}>
-                  <BugReport sx={{ color: '#fff' }} />
+        {/* Vulnerability Details */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card 
+            elevation={1} 
+            sx={{ 
+              borderRadius: 3, 
+              height: '100%'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                <Avatar sx={{ bgcolor: 'error.main', width: 40, height: 40 }}>
+                  <BugReport />
                 </Avatar>
-                <Typography variant="h6">Vulnerability</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Vulnerability Details
+                </Typography>
               </Stack>
-              <Divider sx={{ mb: 2 }} />
+              
               {vuln ? (
-                <Stack spacing={1}>
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>ID:</Typography>
-                    <Typography variant="body2">{vuln.id}</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Score:</Typography>
-                    <Typography variant="body2">{vuln.cvss_score ?? '-'}</Typography>
-                  </Stack>
-                  <Typography variant="body2" sx={{ mt: 1 }}>{description}</Typography>
-                  <Button size="small" sx={{ mt: 1 }} variant="outlined" onClick={() => navigate(`/vulnerabilities/${encodeURIComponent(vuln.id)}`)}>View vulnerability</Button>
+                <Stack spacing={2.5}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      CVE ID
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {vuln.id}
+                    </Typography>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      CVSS Score
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Assessment fontSize="small" color="action" />
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {vuln.cvss_score ?? 'Not available'}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Description
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        bgcolor: 'grey.50', 
+                        p: 2, 
+                        borderRadius: 2,
+                        lineHeight: 1.6,
+                        maxHeight: '120px',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {description || 'No description available'}
+                    </Typography>
+                  </Box>
+                  
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<Launch />}
+                    onClick={() => navigate(`/vulnerabilities/${encodeURIComponent(vuln.id)}`)}
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    View Full Vulnerability
+                  </Button>
                 </Stack>
               ) : (
-                <Typography variant="body2" color="text.secondary">No vulnerability details</Typography>
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <BugReport sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="body1" color="text.secondary">
+                    Vulnerability details not available
+                  </Typography>
+                </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 1 }}>Actions</Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
-                <TextField
-                  select
-                  label="Choose workflow to execute"
-                  value={selectedWorkflow}
-                  onChange={(e) => setSelectedWorkflow(Number(e.target.value))}
-                  sx={{ minWidth: 300 }}
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {workflows.filter(w => w.enabled).map((w) => (
-                    <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>
-                  ))}
-                </TextField>
-                <Button variant="contained" disabled={!selectedWorkflow || execBusy} onClick={handleExecute}>
-                  {execBusy ? 'Running...' : 'Execute on this alert'}
-                </Button>
+        {/* Workflow Actions */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card 
+            elevation={1} 
+            sx={{ 
+              borderRadius: 3, 
+              height: '100%'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
+                  <Assignment />
+                </Avatar>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Workflow Actions
+                </Typography>
               </Stack>
-              {execMsg && (
-                <MuiAlert sx={{ mt: 2 }} severity={execMsg.includes('Failed') ? 'error' : 'success'}>{execMsg}</MuiAlert>
-              )}
+              
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                    Execute Workflow
+                  </Typography>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Choose workflow to execute"
+                    value={selectedWorkflow}
+                    onChange={(e) => setSelectedWorkflow(Number(e.target.value))}
+                    variant="outlined"
+                  >
+                    <MenuItem value="">
+                      <em>Select a workflow</em>
+                    </MenuItem>
+                    {workflows.filter(w => w.enabled).map((w) => (
+                      <MenuItem key={w.id} value={w.id}>
+                        {w.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+                
+                <Button 
+                  variant="contained" 
+                  startIcon={execBusy ? <CircularProgress size={16} /> : <Launch />}
+                  disabled={!selectedWorkflow || execBusy} 
+                  onClick={handleExecute}
+                  size="large"
+                  sx={{ 
+                    py: 1.5,
+                    bgcolor: 'success.main',
+                    '&:hover': { bgcolor: 'success.dark' }
+                  }}
+                >
+                  {execBusy ? 'Executing Workflow...' : 'Execute Workflow'}
+                </Button>
+                
+                {execMsg && (
+                  <MuiAlert 
+                    severity={execMsg.includes('Failed') ? 'error' : 'success'}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {execMsg}
+                  </MuiAlert>
+                )}
+              </Stack>
             </CardContent>
           </Card>
         </Grid>

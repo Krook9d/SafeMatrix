@@ -76,13 +76,13 @@ def list_alerts(
 ) -> Dict[str, Any]:
     must: List[Dict[str, Any]] = []
     if status:
-        must.append({"term": {"status.keyword": status}})
+        must.append({"term": {"status": status}})
     if host_id:
-        must.append({"term": {"host_id.keyword": host_id}})
+        must.append({"term": {"host_id": host_id}})
     if software:
         must.append({"term": {"software_name.keyword": software}})
     if cve_id:
-        must.append({"term": {"cve_id.keyword": cve_id}})
+        must.append({"term": {"cve_id": cve_id}})
 
     query: Dict[str, Any]
     if must:
