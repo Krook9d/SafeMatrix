@@ -1,60 +1,92 @@
 @echo off
-echo Building SafeMatrix Agent v2.0...
+REM SafeMatrix Agent Build Script for Windows
+REM Requires: Visual Studio (with C/C++ tools) or MinGW-w64
 
-:: Download dependencies
-echo Downloading dependencies...
-go mod tidy
+echo ================================================
+echo   SafeMatrix Agent - Build System
+echo   Professional C Agent for Windows
+echo ================================================
+echo.
 
-:: Clean previous builds
-if exist safematrix-agent.exe del safematrix-agent.exe
-if exist safematrix-agent-gui.exe del safematrix-agent-gui.exe
-if exist safematrix-installer.exe del safematrix-installer.exe
-
-:: Build main GUI version (installer + dashboard + tray)
-echo Building SafeMatrix Agent GUI...
-set GOOS=windows
-set GOARCH=amd64
-go build -ldflags "-H windowsgui -s -w" -o safematrix-agent-gui.exe ./cmd/main.go
-
-if %ERRORLEVEL% EQU 0 (
-    echo ✅ GUI Build successful!
-    echo Executable: safematrix-agent-gui.exe
-) else (
-    echo ❌ GUI Build failed!
+REM Check if cmake is available
+where cmake >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: CMake not found!
+    echo Please install CMake from https://cmake.org/download/
+    echo Or install Visual Studio with C++ development tools
+    pause
     exit /b 1
 )
 
-:: Build CLI version
-echo Building CLI version for Windows...
-go build -ldflags "-s -w" -o safematrix-agent.exe ./cmd/main-cli.go
+echo [1/4] Creating build directory...
+if not exist build mkdir build
+cd build
 
-if %ERRORLEVEL% EQU 0 (
-    echo ✅ CLI Build successful!
+echo.
+echo [2/4] Generating build files with CMake...
+cmake .. -G "Visual Studio 17 2022" -A x64
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ERROR: CMake generation failed!
+    echo.
+    echo Trying with MinGW Makefiles...
+    cmake .. -G "MinGW Makefiles"
+    if %ERRORLEVEL% NEQ 0 (
+        echo ERROR: CMake generation failed with MinGW too!
+        echo Please install Visual Studio or MinGW-w64
+        cd ..
+        pause
+        exit /b 1
+    )
+)
+
+echo.
+echo [3/4] Building SafeMatrix Agent...
+cmake --build . --config Release
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ERROR: Build failed!
+    cd ..
+    pause
+    exit /b 1
+)
+
+echo.
+echo [4/4] Copying executable...
+cd ..
+if exist build\bin\Release\safematrix-agent.exe (
+    copy /Y build\bin\Release\safematrix-agent.exe safematrix-agent.exe
+) else if exist build\bin\safematrix-agent.exe (
+    copy /Y build\bin\safematrix-agent.exe safematrix-agent.exe
+) else (
+    echo WARNING: Executable not found in expected location
+    echo Looking in build directory...
+    dir /s /b build\safematrix-agent.exe
+)
+
+if exist safematrix-agent.exe (
+    echo.
+    echo ================================================
+    echo   ✓ BUILD SUCCESSFUL!
+    echo ================================================
+    echo.
     echo Executable: safematrix-agent.exe
+    echo Size: 
+    dir safematrix-agent.exe | find "safematrix-agent.exe"
+    echo.
+    echo Usage:
+    echo   safematrix-agent.exe          - Show status or install
+    echo   safematrix-agent.exe install  - Install as Windows service
+    echo   safematrix-agent.exe help     - Show all commands
+    echo.
+    echo Installation:
+    echo   Run as Administrator to install:
+    echo   safematrix-agent.exe install
+    echo.
 ) else (
-    echo ❌ CLI Build failed!
-    exit /b 1
+    echo.
+    echo ERROR: Build completed but executable not found!
+    echo Please check the build directory manually.
 )
 
-echo.
-echo 🎉 Build completed successfully!
-echo.
-echo 📦 SafeMatrix Agent v2.0 Executables:
-echo.
-echo 🖥️  safematrix-agent-gui.exe - Main Agent (Installer/Dashboard/Tray)
-echo     • Double-click to install (first run)
-echo     • Runs in system tray after installation
-echo     • Click tray icon to open dashboard
-echo.
-echo 💻 safematrix-agent.exe - CLI Version  
-echo     • Command line interface for servers
-echo     • Use with scripts and automation
-echo.
-echo 🚀 Usage:
-echo   safematrix-agent-gui.exe          (Install or show dashboard)
-echo   safematrix-agent-gui.exe --tray   (Force tray mode)
-echo   safematrix-agent-gui.exe --gui    (Force GUI dashboard)
-echo   safematrix-agent.exe help         (CLI commands)
-echo.
-
-pause 
+pause
