@@ -36,6 +36,7 @@ import {
   ExpandMore,
   ExpandLess,
   NotificationsActive,
+  CloudSync,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -195,6 +196,20 @@ const Layout: React.FC = () => {
                     >
                       <ListItemIcon><Description /></ListItemIcon>
                       <ListItemText primary="Audit Logs" />
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem disablePadding sx={{ pl: 4 }}>
+                    <ListItemButton
+                      selected={location.pathname === '/admin/data-enrichment'}
+                      onClick={() => handleNavigation('/admin/data-enrichment')}
+                      sx={{
+                        '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                        '&.Mui-selected .MuiListItemIcon-root': { color: 'primary.main' },
+                        '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+                      }}
+                    >
+                      <ListItemIcon><CloudSync /></ListItemIcon>
+                      <ListItemText primary="Data Enrichment" />
                     </ListItemButton>
                   </ListItem>
                 </>

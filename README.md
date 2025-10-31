@@ -1,64 +1,5 @@
 # SafeMatrix
 
-# FastAPI Backend Architecture (SafeMatrix)
-
-This document explains the folder and file structure of this backend project. The goal is to clearly separate responsibilities (separation of concerns) to make the code easier to maintain and evolve.
-
----
-
-### `main.py`
-
-This is the main **entry point** of the application.
-- It initializes the FastAPI application.
-- It launches database table creation on startup.
-- It includes API routers defined in the `/api` folder.
-
----
-
-### `/core` Folder
-
-Contains the "central" logic and configuration of the application.
-- **`config.py`**: Manages environment variables and configuration parameters (e.g., database URL, secret keys) using Pydantic.
-- **`database.py`**: Establishes connection to the PostgreSQL database (the SQLAlchemy "engine") and provides database sessions to the application.
-- **`opensearch_client.py`**: Manages connection to the OpenSearch cluster and contains logic to create indexes (`hosts`, `inventories`) on application startup.
-- **`security.py`**: Contains security-related functions, such as password hashing and JWT token creation/verification.
-- **`dependencies.py`**: Defines reusable dependencies across the application, such as `get_db` to get a database session, `get_current_user` for route protection, and `get_opensearch_client` for OpenSearch access.
-
----
-
-### `/models` Folder
-
-Defines the structure of **database tables**.
-- **`user.py`**: Contains the `User` class, which is the SQLAlchemy model corresponding to the `users` table in PostgreSQL. It defines the columns (`id`, `username`, `hashed_password`, etc.).
-
----
-
-### `/schemas` Folder
-
-Defines the **shape of data** that the API receives and sends, using Pydantic models for validation.
-- **`user.py`**: Contains schemas for the user (`UserCreate`, `User`).
-- **`host.py`**: Contains schemas for machines (`HostCreate`, `Host`, etc.), defining the expected structure for creating or returning a machine.
-
----
-
-### `/crud` Folder
-
-Stands for **C**reate, **R**ead, **U**pdate, **D**elete. Contains logic that directly interacts with databases (PostgreSQL or OpenSearch).
-- **`user.py`**: Contains functions to manipulate users in PostgreSQL (`get_user_by_username`, `create_user`).
-- **`host.py`**: Contains functions to manipulate machines in OpenSearch (`create_host`, `get_host`).
-
----
-
-### `/api` Folder
-
-Defines the **routes (endpoints)** of the API.
-- **`/v1`**: A sub-folder for version 1 of our API.
-  - **`users.py`**: Defines routes for users (`POST /users/`, `GET /users/me`).
-  - **`login.py`**: Defines authentication route (`POST /login/access-token`).
-  - **`health.py`**: Contains routes to check service status, such as OpenSearch.
-  - **`hosts.py`**: Defines routes for machines (`POST /hosts/`, `GET /hosts/{host_id}`).
-
----
 
 ### Setup & Launch
 
@@ -113,7 +54,7 @@ pip install -r requirements.txt
      - Replace `your-app-password-here` with your Gmail App Password
      - Generate an App Password from: https://myaccount.google.com/security
 
-**d.1. Configure Gmail for email notifications**
+**d.1. (optionnal) Configure Gmail for email notifications**
 
 After setting up your `backend/.env` file, you need to update the database configuration:
 
@@ -246,3 +187,66 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 - Frontend login page intentionally has no signup UI when `ALLOW_SELF_SIGNUP=false`.
 - If the Users nav item is not visible after logging in as admin, ensure the token is valid and `/api/v1/users/me/` returns `role: "admin"`.
+
+---
+
+## Data Enrichment (NVD Synchronization)
+
+SafeMatrix includes an automated CVE data enrichment system that synchronizes vulnerability data from the National Vulnerability Database (NVD).
+
+### Features
+
+- **Automated Synchronization**: Launch CVE synchronization from the admin interface
+- **Real-time Progress Tracking**: View live updates of CVE ingestion count during synchronization
+- **Background Processing**: Synchronization runs in the background without blocking the application
+- **Redis-based Status Management**: Sync status and progress stored in Redis for real-time updates
+
+### Accessing Data Enrichment
+
+1. Log in as an **admin** user
+2. Navigate to **Settings** from the sidebar
+3. Click on the **Data Enrichment** card
+4. Use the interface to:
+   - Start a new synchronization
+   - Monitor real-time progress (CVE count updates every 2 seconds)
+   - View synchronization details (start time, duration, status)
+   - Cancel ongoing synchronization
+   - Clear completed synchronization status
+
+### Manual Script Execution
+
+You can still run the synchronization script manually from the command line:
+
+```bash
+python sync_nvd.py
+```
+
+### API Endpoints
+
+All data enrichment endpoints are admin-only:
+
+- **Start Sync**: `POST /api/v1/nvd-sync/start`
+  - Initiates NVD synchronization in the background
+  
+- **Get Status**: `GET /api/v1/nvd-sync/status`
+  - Returns current sync status and CVE count
+  
+- **Cancel Sync**: `POST /api/v1/nvd-sync/cancel`
+  - Cancels the current synchronization
+  
+- **Clear Status**: `DELETE /api/v1/nvd-sync/status`
+  - Clears the synchronization status from Redis
+
+### Technical Details
+
+- Synchronization progress is tracked in Redis with key `nvd_sync:status`
+- CVE count is stored in Redis with key `nvd_sync:cve_count`
+- The sync process respects NVD API rate limits (6 seconds between requests)
+- Rejected CVEs are automatically filtered out
+- Data is inserted in batches of 200 for optimal performance
+
+### Prerequisites
+
+- Redis must be running (included in `docker-compose.yml`)
+- Valid NVD API key configured in `backend/.env` (optional but recommended for better rate limits)
+- OpenSearch must be accessible for data storage

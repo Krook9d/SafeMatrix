@@ -9,7 +9,7 @@ import {
   CardActionArea,
   Alert
 } from '@mui/material';
-import { People, History } from '@mui/icons-material';
+import { People, History, CloudSync } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -42,6 +42,13 @@ const Settings: React.FC = () => {
       icon: <History sx={{ fontSize: 40 }} />,
       path: '/admin/audit-logs',
       color: '#388e3c'
+    },
+    {
+      title: 'Data Enrichment',
+      description: 'Synchronize CVE data from the National Vulnerability Database',
+      icon: <CloudSync sx={{ fontSize: 40 }} />,
+      path: '/admin/data-enrichment',
+      color: '#7b1fa2'
     }
   ];
 

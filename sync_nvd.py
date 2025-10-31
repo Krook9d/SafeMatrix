@@ -11,6 +11,7 @@ sys.path.insert(0, project_root)
 from backend.core.nvd_service import NVDService
 from backend.core.opensearch_client import get_opensearch_client
 from backend.crud.vulnerability import bulk_insert_vulnerabilities
+from backend.core.redis_client import get_redis_client
 
 # Configure logging with better formatting
 logging.basicConfig(
@@ -20,6 +21,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 200
+
+# Initialize Redis client for progress tracking
+try:
+    redis_client = get_redis_client()
+    logger.info("Redis client initialized for progress tracking")
+except Exception as e:
+    logger.warning(f"Could not initialize Redis client: {e}. Progress tracking will be disabled.")
+    redis_client = None
 
 def check_prerequisites():
     """
@@ -70,6 +79,13 @@ def run_sync():
         for cve in nvd_service.sync_all_vulnerabilities():
             vulnerabilities_batch.append(cve)
             total_processed += 1
+            
+            # Update Redis counter if available
+            if redis_client:
+                try:
+                    redis_client.increment_cve_count(1)
+                except Exception as e:
+                    logger.warning(f"Could not update Redis counter: {e}")
             
             # Insert batch when full to optimize performance
             if len(vulnerabilities_batch) >= BATCH_SIZE:

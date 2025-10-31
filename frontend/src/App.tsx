@@ -25,6 +25,7 @@ import Settings from './pages/Settings';
 import AuditLogs from './pages/AuditLogs';
 import Alerts from './pages/Alerts';
 import AlertDetail from './pages/AlertDetail';
+import DataEnrichment from './pages/DataEnrichment';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -279,6 +280,14 @@ const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AuditLogs />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="admin/data-enrichment"
+                element={
+                  <AdminRoute>
+                    <DataEnrichment />
                   </AdminRoute>
                 }
               />

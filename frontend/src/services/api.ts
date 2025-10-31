@@ -733,6 +733,38 @@ export const alertsAPI = {
   }
 };
 
+// NVD Sync
+export interface NVDSyncStatus {
+  status: 'idle' | 'running' | 'completed' | 'failed' | 'cancelled';
+  message: string;
+  total_cves: number;
+  started_at?: string;
+  completed_at?: string;
+  error?: string;
+}
+
+export const nvdSyncAPI = {
+  start: async (): Promise<{ success: boolean; message: string; status: string }> => {
+    const response = await apiClient.post('/api/v1/nvd-sync/start');
+    return response.data;
+  },
+  
+  getStatus: async (): Promise<NVDSyncStatus> => {
+    const response = await apiClient.get<NVDSyncStatus>('/api/v1/nvd-sync/status');
+    return response.data;
+  },
+  
+  cancel: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/api/v1/nvd-sync/cancel');
+    return response.data;
+  },
+  
+  clearStatus: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.delete('/api/v1/nvd-sync/status');
+    return response.data;
+  },
+};
+
 // Fonction utilitaire pour vérifier si l'utilisateur est connecté
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('access_token');
