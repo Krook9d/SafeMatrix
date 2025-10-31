@@ -19,14 +19,24 @@ class NVDService:
         self.api_key = api_key
         self.headers = {'apiKey': self.api_key} if self.api_key else {}
 
-    def fetch_vulnerabilities_page(self, start_index: int = 0) -> dict | None:
+    def fetch_vulnerabilities_page(self, start_index: int = 0, last_mod_start_date: str = None, last_mod_end_date: str = None) -> dict | None:
         """
         Fetches a single page of CVEs from the NVD API.
+        
+        Args:
+            start_index: Starting index for pagination
+            last_mod_start_date: Filter by last modification start date (ISO 8601 format)
+            last_mod_end_date: Filter by last modification end date (ISO 8601 format)
         """
         params = {
             'resultsPerPage': RESULTS_PER_PAGE,
             'startIndex': start_index
         }
+        
+        if last_mod_start_date:
+            params['lastModStartDate'] = last_mod_start_date
+        if last_mod_end_date:
+            params['lastModEndDate'] = last_mod_end_date
         
         try:
             logger.info(f"Fetching NVD data page starting at index {start_index}...")
@@ -99,6 +109,64 @@ class NVDService:
                 time.sleep(WAIT_TIME_SECONDS)
         
         logger.info("Finished syncing all vulnerabilities from NVD.")
+
+    def sync_vulnerabilities_by_date(self, last_mod_start_date: str, last_mod_end_date: str):
+        """
+        Iterates through CVEs modified within a specific date range.
+        This is useful for continuous monitoring to fetch only recent updates.
+        
+        Args:
+            last_mod_start_date: Start date for last modification filter (ISO 8601 format)
+            last_mod_end_date: End date for last modification filter (ISO 8601 format)
+            
+        Yields:
+            CVE objects modified within the specified date range
+        """
+        start_index = 0
+        total_results = 1
+        rejected_skipped_total = 0
+        
+        logger.info(f"Fetching CVEs modified between {last_mod_start_date} and {last_mod_end_date}")
+        
+        while start_index < total_results:
+            data = self.fetch_vulnerabilities_page(
+                start_index=start_index,
+                last_mod_start_date=last_mod_start_date,
+                last_mod_end_date=last_mod_end_date
+            )
+            
+            if not data:
+                logger.error("Failed to fetch data page, stopping sync.")
+                break
+            
+            vulnerabilities = data.get('vulnerabilities', [])
+            total_results = data.get('totalResults', 0)
+            
+            logger.info(f"Fetched {len(vulnerabilities)} vulnerabilities. Total in range: {total_results}")
+            
+            rejected_skipped_page = 0
+            for cve_item in vulnerabilities:
+                cve = cve_item['cve']
+                status = str(cve.get('vulnStatus', '')).strip().lower()
+                if status == 'rejected':
+                    rejected_skipped_page += 1
+                    continue
+                yield cve
+            
+            if rejected_skipped_page:
+                rejected_skipped_total += rejected_skipped_page
+                logger.info(
+                    f"Skipped {rejected_skipped_page} rejected CVEs (cumulative: {rejected_skipped_total})"
+                )
+            
+            start_index += RESULTS_PER_PAGE
+            
+            # If we are not done, wait before the next request
+            if start_index < total_results:
+                logger.info(f"Waiting for {WAIT_TIME_SECONDS} seconds before next request...")
+                time.sleep(WAIT_TIME_SECONDS)
+        
+        logger.info(f"Finished syncing vulnerabilities in date range.")
 
 # Example of how to use it (will be moved to the sync script)
 if __name__ == '__main__':

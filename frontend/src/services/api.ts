@@ -735,17 +735,26 @@ export const alertsAPI = {
 
 // NVD Sync
 export interface NVDSyncStatus {
-  status: 'idle' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: 'idle' | 'running' | 'monitoring' | 'completed' | 'failed' | 'stopped';
+  mode?: 'full' | 'continuous';
   message: string;
   total_cves: number;
   started_at?: string;
   completed_at?: string;
+  stopped_at?: string;
+  last_check?: string;
+  next_check?: string;
+  cycle_count?: number;
+  last_cycle_cves?: number;
+  check_interval_seconds?: number;
   error?: string;
 }
 
 export const nvdSyncAPI = {
-  start: async (): Promise<{ success: boolean; message: string; status: string }> => {
-    const response = await apiClient.post('/api/v1/nvd-sync/start');
+  start: async (mode: 'full' | 'continuous' = 'full'): Promise<{ success: boolean; message: string; status: string; mode: string }> => {
+    const response = await apiClient.post('/api/v1/nvd-sync/start', null, {
+      params: { mode }
+    });
     return response.data;
   },
   
@@ -754,8 +763,8 @@ export const nvdSyncAPI = {
     return response.data;
   },
   
-  cancel: async (): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post('/api/v1/nvd-sync/cancel');
+  stop: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/api/v1/nvd-sync/stop');
     return response.data;
   },
   

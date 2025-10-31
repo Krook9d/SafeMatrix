@@ -62,9 +62,9 @@ const DataEnrichment: React.FC = () => {
     fetchStatus();
   }, []);
 
-  // Polling automatique quand la synchronisation est en cours
+  // Polling automatique quand la synchronisation est en cours ou en monitoring
   useEffect(() => {
-    if (syncStatus?.status === 'running') {
+    if (syncStatus?.status === 'running' || syncStatus?.status === 'monitoring') {
       const interval = setInterval(() => {
         fetchStatus();
       }, 2000); // Mise à jour toutes les 2 secondes
@@ -73,12 +73,12 @@ const DataEnrichment: React.FC = () => {
     }
   }, [syncStatus?.status]);
 
-  // Démarrer la synchronisation
-  const handleStartSync = async () => {
+  // Démarrer la synchronisation (Full ou Continuous)
+  const handleStartSync = async (mode: 'full' | 'continuous') => {
     setLoading(true);
     setError(null);
     try {
-      await nvdSyncAPI.start();
+      await nvdSyncAPI.start(mode);
       await fetchStatus();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Error starting synchronization');
@@ -87,15 +87,15 @@ const DataEnrichment: React.FC = () => {
     }
   };
 
-  // Annuler la synchronisation
-  const handleCancelSync = async () => {
+  // Arrêter la synchronisation
+  const handleStopSync = async () => {
     setLoading(true);
     setError(null);
     try {
-      await nvdSyncAPI.cancel();
+      await nvdSyncAPI.stop();
       await fetchStatus();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error cancelling synchronization');
+      setError(err.response?.data?.detail || 'Error stopping synchronization');
     } finally {
       setLoading(false);
     }
@@ -119,12 +119,13 @@ const DataEnrichment: React.FC = () => {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'running':
+      case 'monitoring':
         return 'primary';
       case 'completed':
         return 'success';
       case 'failed':
         return 'error';
-      case 'cancelled':
+      case 'stopped':
         return 'warning';
       default:
         return 'default';
@@ -135,17 +136,21 @@ const DataEnrichment: React.FC = () => {
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'running':
+      case 'monitoring':
         return <CloudSync />;
       case 'completed':
         return <CheckCircle />;
       case 'failed':
         return <ErrorIcon />;
-      case 'cancelled':
+      case 'stopped':
         return <CancelIcon />;
       default:
         return <CloudSync />;
     }
   };
+  
+  // Vérifier si une synchronisation est active
+  const isActive = syncStatus?.status === 'running' || syncStatus?.status === 'monitoring';
 
   // Formater la durée
   const formatDuration = (startTime?: string, endTime?: string) => {
@@ -201,11 +206,13 @@ const DataEnrichment: React.FC = () => {
 
               <Divider />
 
-              {syncStatus?.status === 'running' && (
+              {(syncStatus?.status === 'running' || syncStatus?.status === 'monitoring') && (
                 <Box>
                   <LinearProgress />
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Synchronization in progress...
+                    {syncStatus.mode === 'continuous' 
+                      ? 'Continuous monitoring active...' 
+                      : 'Full synchronization in progress...'}
                   </Typography>
                 </Box>
               )}
@@ -213,6 +220,26 @@ const DataEnrichment: React.FC = () => {
               <Typography variant="body2" color="text.secondary">
                 {syncStatus?.message || 'No synchronization in progress'}
               </Typography>
+              
+              {syncStatus?.mode === 'continuous' && syncStatus?.status === 'monitoring' && (
+                <Box mt={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Monitoring Details:</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • Cycle #{syncStatus.cycle_count || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • Last check: {syncStatus.last_check ? new Date(syncStatus.last_check).toLocaleTimeString() : 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • Next check: {syncStatus.next_check ? new Date(syncStatus.next_check).toLocaleTimeString() : 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • Last cycle CVEs: {syncStatus.last_cycle_cves || 0}
+                  </Typography>
+                </Box>
+              )}
 
               {syncStatus?.error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
@@ -220,27 +247,38 @@ const DataEnrichment: React.FC = () => {
                 </Alert>
               )}
 
-              <Box display="flex" gap={2} mt={2}>
-                {syncStatus?.status === 'running' ? (
+              <Box display="flex" gap={2} mt={2} flexWrap="wrap">
+                {isActive ? (
                   <Button
                     variant="contained"
                     color="warning"
                     startIcon={<Stop />}
-                    onClick={handleCancelSync}
+                    onClick={handleStopSync}
                     disabled={loading}
                   >
-                    Cancel
+                    Stop {syncStatus?.mode === 'continuous' ? 'Monitoring' : 'Synchronization'}
                   </Button>
                 ) : (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={loading ? <CircularProgress size={20} /> : <PlayArrow />}
-                    onClick={handleStartSync}
-                    disabled={loading || syncStatus?.status === 'running'}
-                  >
-                    Start Synchronization
-                  </Button>
+                  <>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={loading ? <CircularProgress size={20} /> : <PlayArrow />}
+                      onClick={() => handleStartSync('full')}
+                      disabled={loading}
+                    >
+                      Full Synchronization
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={loading ? <CircularProgress size={20} /> : <CloudSync />}
+                      onClick={() => handleStartSync('continuous')}
+                      disabled={loading}
+                    >
+                      Start Continuous Monitoring
+                    </Button>
+                  </>
                 )}
 
                 <Button
@@ -249,10 +287,10 @@ const DataEnrichment: React.FC = () => {
                   onClick={fetchStatus}
                   disabled={loading}
                 >
-                  Refresh Status
+                  Refresh
                 </Button>
 
-                {syncStatus?.status && syncStatus.status !== 'idle' && syncStatus.status !== 'running' && (
+                {syncStatus?.status && !['idle', 'running', 'monitoring'].includes(syncStatus.status) && (
                   <Button
                     variant="outlined"
                     color="secondary"
@@ -280,11 +318,16 @@ const DataEnrichment: React.FC = () => {
               <Typography variant="body2" color="rgba(255,255,255,0.8)">
                 Total CVE records synchronized
               </Typography>
-              {syncStatus?.status === 'running' && (
+              {(syncStatus?.status === 'running' || syncStatus?.status === 'monitoring') && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="caption" color="rgba(255,255,255,0.8)">
                     Live update - Last refresh: {lastUpdate.toLocaleTimeString()}
                   </Typography>
+                  {syncStatus?.mode === 'continuous' && (
+                    <Typography variant="caption" color="rgba(255,255,255,0.8)" display="block">
+                      Mode: Continuous Monitoring
+                    </Typography>
+                  )}
                 </Box>
               )}
             </CardContent>
@@ -349,9 +392,18 @@ const DataEnrichment: React.FC = () => {
         {/* Informations d'aide */}
         <Grid item xs={12}>
           <Alert severity="info">
-            <Typography variant="body2">
-              <strong>Note:</strong> The synchronization process fetches all CVE data from the National Vulnerability Database.
-              This process may take several minutes to complete depending on the number of vulnerabilities available.
+            <Typography variant="body2" gutterBottom>
+              <strong>Two Synchronization Modes:</strong>
+            </Typography>
+            <Typography variant="body2" component="div">
+              • <strong>Full Synchronization:</strong> Downloads all CVE data from NVD and stops when complete. 
+              Use this for the initial setup or to perform a complete refresh.
+            </Typography>
+            <Typography variant="body2" component="div" sx={{ mt: 1 }}>
+              • <strong>Continuous Monitoring:</strong> Stays active and checks for new/updated CVEs every hour. 
+              This mode is designed to run continuously and keep your database up-to-date automatically.
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
               The counter above updates in real-time during synchronization.
             </Typography>
           </Alert>
