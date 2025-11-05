@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from typing import Dict, Any
+from typing import Dict, Any, List
+from datetime import datetime
 import subprocess
 import sys
 import os
@@ -183,7 +184,18 @@ async def get_nvd_sync_status() -> Dict[str, Any]:
     
     # Add current CVE count to the status
     status["total_cves"] = cve_count
-    
+
+    history_entry = {
+        "status": status.get("status"),
+        "mode": status.get("mode"),
+        "message": status.get("message"),
+        "total_cves": cve_count,
+        "cycle_count": status.get("cycle_count"),
+        "last_cycle_cves": status.get("last_cycle_cves"),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    redis_client.append_sync_history(history_entry)
+
     return status
 
 
@@ -244,4 +256,15 @@ async def clear_sync_status(
         "success": True,
         "message": "Synchronization status cleared"
     }
+
+
+@router.get("/history")
+async def get_nvd_sync_history(limit: int = 50) -> Dict[str, List[Dict[str, Any]]]:
+    """Return persisted history points for NVD synchronization."""
+    redis_client = get_redis_client()
+    limit = max(min(limit, 200), 1)
+    history = redis_client.get_sync_history(limit)
+    # Entries are stored newest first; reverse for chronological order
+    history.reverse()
+    return {"items": history}
 

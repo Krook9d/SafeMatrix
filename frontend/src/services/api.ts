@@ -750,6 +750,17 @@ export interface NVDSyncStatus {
   error?: string;
 }
 
+export interface NVDSyncHistoryEntry {
+  status?: string;
+  mode?: string;
+  message?: string;
+  total_cves: number;
+  delta?: number;
+  cycle_count?: number;
+  last_cycle_cves?: number;
+  timestamp: string;
+}
+
 export const nvdSyncAPI = {
   start: async (mode: 'full' | 'continuous' = 'full'): Promise<{ success: boolean; message: string; status: string; mode: string }> => {
     const response = await apiClient.post('/api/v1/nvd-sync/start', null, {
@@ -761,6 +772,13 @@ export const nvdSyncAPI = {
   getStatus: async (): Promise<NVDSyncStatus> => {
     const response = await apiClient.get<NVDSyncStatus>('/api/v1/nvd-sync/status');
     return response.data;
+  },
+
+  getHistory: async (limit = 50): Promise<NVDSyncHistoryEntry[]> => {
+    const response = await apiClient.get<{ items: NVDSyncHistoryEntry[] }>('/api/v1/nvd-sync/history', {
+      params: { limit }
+    });
+    return response.data.items;
   },
   
   stop: async (): Promise<{ success: boolean; message: string }> => {
