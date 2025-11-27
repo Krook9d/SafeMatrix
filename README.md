@@ -1,3 +1,19 @@
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/Krook9d/SafeMatrix">
+    <img src="/frontend/src/assets/connectors/SafeMatrix_title.svg" alt="SafeMatrix Logo" width="400" height="400" />
+  </a>
+
+  <!-- PROJECT SHIELDS -->
+  
+  [![Issues][issues-shield]][issues-url]
+  [![MIT License][license-shield]][license-url]
+  [![LinkedIn][linkedin-shield]][linkedin-url]
+  [![Forks][forks-shield]][forks-url]
+  [![Stargazers][stars-shield]][stars-url]
+</div>
+
 # SafeMatrix
 
 A security analytics platform to centralize software inventory and vulnerability visibility across your endpoints (Windows, Linux and macOS). Lightweight Go agents collect installed software and send inventories to a Python FastAPI backend, which enriches data with public vulnerability sources and exposes it through a modern React dashboard.
@@ -257,3 +273,14 @@ All endpoints are restricted to admins:
 ## License
 
 This project is provided as-is for security monitoring and research purposes. See the project license file (if present) for precise terms.
+
+[issues-shield]: https://img.shields.io/github/issues/Krook9d/SafeMatrix.svg?style=for-the-badge
+[issues-url]: https://github.com/Krook9d/SafeMatrix/issues
+[license-shield]: https://img.shields.io/github/license/Krook9d/SafeMatrix.svg?style=for-the-badge
+[license-url]: https://github.com/Krook9d/SafeMatrix/blob/main/LICENSE
+[forks-shield]: https://img.shields.io/github/forks/Krook9d/SafeMatrix.svg?style=for-the-badge
+[forks-url]: https://github.com/Krook9d/SafeMatrix/network/members
+[stars-shield]: https://img.shields.io/github/stars/Krook9d/SafeMatrix.svg?style=for-the-badge
+[stars-url]: https://github.com/Krook9d/SafeMatrix/stargazers
+[linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
+[linkedin-url]: https://www.linkedin.com
