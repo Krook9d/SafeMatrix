@@ -1,3 +1,6 @@
+<!-- Improved compatibility of back to top link -->
+<a id="readme-top"></a>
+
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
