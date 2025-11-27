@@ -274,13 +274,14 @@ All endpoints are restricted to admins:
 
 This project is provided as-is for security monitoring and research purposes. See the project license file (if present) for precise terms.
 
-[issues-shield]: https://img.shields.io/github/issues/Krook9d/SafeMatrix.svg?style=for-the-badge
+<!-- MARKDOWN LINKS & IMAGES -->
+[issues-shield]: https://img.shields.io/github/issues/Krook9d/PurpleLab.svg?style=for-the-badge
 [issues-url]: https://github.com/Krook9d/SafeMatrix/issues
-[license-shield]: https://img.shields.io/github/license/Krook9d/SafeMatrix.svg?style=for-the-badge
-[license-url]: https://github.com/Krook9d/SafeMatrix/blob/main/LICENSE
-[forks-shield]: https://img.shields.io/github/forks/Krook9d/SafeMatrix.svg?style=for-the-badge
-[forks-url]: https://github.com/Krook9d/SafeMatrix/network/members
-[stars-shield]: https://img.shields.io/github/stars/Krook9d/SafeMatrix.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/Krook9d/PurpleLab.svg?style=for-the-badge
+[license-url]: https://github.com/Krook9d/PurpleLab/blob/master/LICENSE
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/martin-cayrol-47669a1a2/
+[forks-shield]: https://img.shields.io/github/forks/Krook9d/PurpleLab.svg?style=for-the-badge
+[forks-url]: https://github.com/Krook9d/PurpleLab/network/members
+[stars-shield]: https://img.shields.io/github/stars/Krook9d/PurpleLab.svg?style=for-the-badge
 [stars-url]: https://github.com/Krook9d/SafeMatrix/stargazers
-[linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
-[linkedin-url]: https://www.linkedin.com
