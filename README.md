@@ -282,6 +282,6 @@ This project is provided as-is for security monitoring and research purposes. Se
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/martin-cayrol-47669a1a2/
 [forks-shield]: https://img.shields.io/github/forks/Krook9d/PurpleLab.svg?style=for-the-badge
-[forks-url]: https://github.com/Krook9d/PurpleLab/network/members
+[forks-url]: https://github.com/Krook9d/SafeMatrix/network/members
 [stars-shield]: https://img.shields.io/github/stars/Krook9d/PurpleLab.svg?style=for-the-badge
 [stars-url]: https://github.com/Krook9d/SafeMatrix/stargazers
