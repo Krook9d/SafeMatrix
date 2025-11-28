@@ -224,6 +224,20 @@ const Layout: React.FC = () => {
               rel="noopener noreferrer"
             >
               <ListItemIcon sx={{ color: 'text.secondary' }}><Description /></ListItemIcon>
+              <ListItemText primary="API/Swagger" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={location.pathname === '/documentation'}
+              onClick={() => handleNavigation('/documentation')}
+              sx={{
+                '& .MuiListItemIcon-root': { color: 'text.secondary' },
+                '&.Mui-selected .MuiListItemIcon-root': { color: 'primary.main' },
+                '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
+              }}
+            >
+              <ListItemIcon sx={{ color: 'text.secondary' }}><Description /></ListItemIcon>
               <ListItemText primary="Documentation" />
             </ListItemButton>
           </ListItem>

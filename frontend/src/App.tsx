@@ -19,6 +19,7 @@ import WorkflowForm from './pages/WorkflowForm';
 import WorkflowExecutions from './pages/WorkflowExecutions';
 import WorkflowTest from './pages/WorkflowTest';
 import Connectors from './pages/Connectors';
+import Documentation from './pages/Documentation';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
 import Settings from './pages/Settings';
@@ -258,6 +259,7 @@ const App: React.FC = () => {
               <Route path="workflows/:id/executions" element={<WorkflowExecutions />} />
               <Route path="workflows/:id/test" element={<WorkflowTest />} />
               <Route path="connectors" element={<Connectors />} />
+              <Route path="documentation" element={<Documentation />} />
               <Route path="profile" element={<Profile />} />
               <Route
                 path="admin/users"

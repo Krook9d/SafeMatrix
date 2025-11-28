@@ -37,14 +37,15 @@ A security analytics platform to centralize software inventory and vulnerability
   - Detailed host and software views with associated vulnerabilities.
   - Search and filtering capabilities powered by the backend API and OpenSearch.
 
-- **Strong authentication and RBAC**
-  - JWT-based authentication backed by **PostgreSQL**.
-  - Role-based access control: `admin`, `analyst`, `viewer`.
-  - Admin-only user provisioning by default (no public signup).
-
 - **Scalable and containerized**
   - Docker Compose environment (backend, frontend, PostgreSQL, OpenSearch, Redis, optional dashboards).
   - Agents installed directly on monitored endpoints.
+
+- **Strong authentication, RBAC and admin workflows**
+	- JWT-based authentication with hashed passwords stored in **PostgreSQL**.
+	- Three roles: `admin`, `analyst`, `viewer`.
+	- Initial admin can be bootstrapped via environment variables; optional self-signup forces new accounts to `viewer`.
+	- Admin-only access to sensitive areas: user management, audit logs, data-enrichment controls, and configuration of **connectors** and **automation workflows**.
 
 ---
 
@@ -219,6 +220,35 @@ SafeMatrix enforces **admin-only user creation** by default.
 - **Authentication details**
   - JWT bearer tokens stored in `localStorage` under key `access_token`.
   - `authAPI.getCurrentUser()` is used by the frontend to resolve the current user and role.
+
+---
+
+## Connectors & Workflows
+
+SafeMatrix allows you to plug external systems into your detection and response workflows.
+
+- **Connectors (integrations)**
+  - Managed from the **Connectors** page in the UI (admin area).
+  - Supported connector types include:
+    - **Email** – send notification emails via SMTP (host, port, credentials, TLS, from address).
+    - **TheHive** – create cases/alerts in TheHive using an API key.
+    - **ServiceNow** – open incidents in a ServiceNow instance (URL, table, credentials).
+    - **Jira** – create issues in Jira Cloud/Data Center (URL, email, API token, optional issue type).
+  - Each connector has:
+    - A **name**, **type**, JSON **config**, and an **enabled/disabled** flag.
+    - A built-in **Test** action to validate connectivity and credentials.
+
+- **Automation workflows**
+  - Designed to react to alerts, vulnerabilities or inventory changes.
+  - Configured from the **Workflows** section in the UI.
+  - A workflow typically defines:
+    - **Triggers** (e.g. conditions on severity, asset, tag, etc.).
+    - One or more **actions** that rely on connectors (send email, create TheHive case, open ServiceNow/Jira ticket, …).
+  - When a workflow runs, it selects the appropriate, **enabled** connectors and uses their configuration to execute actions.
+
+- **Access control**
+  - Only **admin** users can create, edit or delete connectors and workflows.
+  - Analysts/viewers can see the results (alerts, tickets, emails) but cannot change integration settings.
 
 ---
 
