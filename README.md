@@ -243,6 +243,8 @@ SafeMatrix allows you to plug external systems into your detection and response 
   - Only **admin** users can create, edit or delete connectors and workflows.
   - Analysts/viewers can see the results (alerts, tickets, emails) but cannot change integration settings.
 
+<img src="/frontend/public/screenshot/workflowdraw.png" width="800" alt="Architecture">
+
 ---
 
 ## Vulnerability Data Enrichment (NVD Sync)
@@ -291,6 +293,30 @@ All endpoints are restricted to admins:
 - Rejected / invalid CVEs are filtered.
 - Data is ingested in batches for performance.
 
+---
+
+## Screenshot
+
+### Login page
+<img src="/frontend/public/screenshot/login.png" width="800" alt="login">
+
+### Home Dashboard
+<img src="/frontend/public/screenshot/dashboard.png" width="800" alt="dashboard">
+
+### Vulnerabilities
+<img src="/frontend/public/screenshot/vulnerabilities.png" width="800" alt="vulnerabilities">
+<img src="/frontend/public/screenshot/vulnerabilities1.png" width="800" alt="vulnerabilities1">
+<img src="/frontend/public/screenshot/vulnerabilities2.png" width="800" alt="vulnerabilities2">
+
+### Connectors
+<img src="/frontend/public/screenshot/connectors.png" width="800" alt="Architecture">
+
+### Host
+<img src="/frontend/public/screenshot/hosts.png" width="800" alt="hosts">
+<img src="/frontend/public/screenshot/hosts1.png" width="800" alt="hosts1">
+
+### Inventory
+<img src="/frontend/public/screenshot/inventory.png" width="800" alt="inventory">
 ---
 
 ## License
