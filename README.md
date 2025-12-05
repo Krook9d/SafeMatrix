@@ -16,7 +16,11 @@
 
 # SafeMatrix
 
-A security analytics platform to centralize software inventory and vulnerability visibility across your endpoints (Windows, Linux and macOS). Lightweight Go agents collect installed software and send inventories to a Python FastAPI backend, which enriches data with public vulnerability sources and exposes it through a modern React dashboard.
+A security analytics and orchestration platform focused on centralized vulnerability collection and automated response workflows.
+The system aggregates vulnerability data from multiple sources and applies customizable rules to automatically trigger the right action through built-in connectors: notify the appropriate team by email, open a ServiceNow incident, create a Jira ticket, or generate a case in TheHive.
+
+Lightweight endpoint telemetry (via optional Go agents, currently in beta) provides complementary software inventory data, while the Python FastAPI backend enriches findings and exposes them through a modern React dashboard.
+The platform acts as a unified control plane to detect vulnerabilities faster and orchestrate consistent, automated remediation across your organization.
 
 ---
 
