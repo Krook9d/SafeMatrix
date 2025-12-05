@@ -53,18 +53,7 @@ A security analytics platform to centralize software inventory and vulnerability
 
 SafeMatrix is composed of four main parts: agents, backend, storage and frontend.
 
-```text
-[Go Agent]
-   |  (HTTPS / JSON push)
-   v
-[FastAPI Backend]  <---  [React Dashboard]
-   |                      (JWT-authenticated API calls)
-   +--> [PostgreSQL]   (users, auth, configuration)
-   |
-   +--> [OpenSearch]   (hosts, inventories, vulnerabilities, logs)
-   |
-   +--> [Redis]        (background jobs, sync status)
-```
+<img src="/frontend/public/screenshot/Architecture.png" width="800" alt="Architecture">
 
 - **Go Agents**
   - Background service/daemon on Windows, Linux and macOS.
