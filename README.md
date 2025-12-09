@@ -118,6 +118,12 @@ From the `backend/` directory:
 
 3. **Install dependencies**
 
+Install Microsoft C++ Build Tools
+
+```bash
+winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
    ```bash
    pip install -r requirements.txt
    ```
