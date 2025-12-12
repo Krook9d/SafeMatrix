@@ -37,6 +37,7 @@ import {
   ExpandLess,
   NotificationsActive,
   CloudSync,
+  Storage,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,6 +61,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Inventory', icon: <Inventory2 />, path: '/inventory' },
   { text: 'Workflows', icon: <AccountTree />, path: '/workflows' },
   { text: 'Connectors', icon: <Settings />, path: '/connectors' },
+  { text: 'Directory', icon: <Storage />, path: '/custom-database' },
   { text: 'DSL Query', icon: <Code />, path: '/dsl-query' },
 ];
 

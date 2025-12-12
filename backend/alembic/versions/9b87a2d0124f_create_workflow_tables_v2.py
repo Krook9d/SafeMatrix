@@ -97,6 +97,33 @@ def upgrade() -> None:
             error_message TEXT
         );
     """)
+
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS teams (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL UNIQUE,
+            description TEXT,
+            notes TEXT,
+            extra_data JSON,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            created_by VARCHAR(255) NOT NULL,
+            updated_by VARCHAR(255)
+        );
+    """)
+
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS team_members (
+            id SERIAL PRIMARY KEY,
+            team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            email VARCHAR(320) NOT NULL,
+            name VARCHAR(255),
+            role VARCHAR(255),
+            notes TEXT,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        );
+    """)
     
     # Create indexes
     op.execute("CREATE INDEX IF NOT EXISTS ix_workflows_id ON workflows(id);")
@@ -109,9 +136,16 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_workflow_executions_idempotency_key ON workflow_executions(idempotency_key);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_action_logs_id ON action_logs(id);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_action_logs_execution_id ON action_logs(execution_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_teams_id ON teams(id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_teams_name ON teams(name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_team_members_id ON team_members(id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_team_members_team_id ON team_members(team_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_team_members_email ON team_members(email);")
 
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS team_members CASCADE;")
+    op.execute("DROP TABLE IF EXISTS teams CASCADE;")
     op.execute("DROP TABLE IF EXISTS action_logs CASCADE;")
     op.execute("DROP TABLE IF EXISTS workflow_executions CASCADE;")
     op.execute("DROP TABLE IF EXISTS connector_configs CASCADE;")

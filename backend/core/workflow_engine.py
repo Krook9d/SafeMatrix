@@ -7,6 +7,7 @@ from sqlalchemy import and_
 
 # Import from backend module (when running from project root)
 from backend.models.workflow import Workflow, WorkflowExecution, ActionLog, ConnectorConfig, ExecutionStatus, WorkflowStatus
+from backend.models.custom_db import TeamMember
 from backend.core.rules_engine import RulesEngine
 from backend.core.connectors.factory import ConnectorFactory
 from backend.schemas.workflow import RuleCondition, WorkflowAction
@@ -300,6 +301,37 @@ class WorkflowEngine:
         logger.info(f"Auto-resolved connector ID {connector.id} for action type '{action_type}'")
         return connector.id
 
+    def _expand_email_recipients(self, action_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Merge team members into the email recipient lists.
+        """
+        to_emails = list(action_config.get("to") or [])
+        cc_emails = list(action_config.get("cc") or [])
+        team_ids = action_config.get("team_ids") or []
+        cc_team_ids = action_config.get("cc_team_ids") or []
+
+        if team_ids:
+            members = self.db.query(TeamMember).filter(TeamMember.team_id.in_(team_ids)).all()
+            to_emails.extend([m.email for m in members])
+
+        if cc_team_ids:
+            members = self.db.query(TeamMember).filter(TeamMember.team_id.in_(cc_team_ids)).all()
+            cc_emails.extend([m.email for m in members])
+
+        # Deduplicate while preserving order
+        def _unique(seq):
+            seen = set()
+            ordered = []
+            for item in seq:
+                if item not in seen:
+                    seen.add(item)
+                    ordered.append(item)
+            return ordered
+
+        action_config["to"] = _unique(to_emails)
+        action_config["cc"] = _unique(cc_emails)
+        return action_config
+
     async def execute_action(
         self, 
         action: WorkflowAction, 
@@ -317,11 +349,16 @@ class WorkflowEngine:
         Returns:
             Action execution result
         """
+        # Prepare action payload (may be enriched for email teams)
+        action_payload = action.config.dict()
+        if action.type == "email":
+            action_payload = self._expand_email_recipients(action_payload)
+
         # Create action log
         action_log = ActionLog(
             execution_id=execution_id,
             action_type=action.type,
-            action_config=action.config.dict(),
+            action_config=action_payload,
             status=ExecutionStatus.RUNNING
         )
         
@@ -361,7 +398,7 @@ class WorkflowEngine:
                 "execution_id": execution_id
             }
 
-            result = await connector.execute_action(action.config.dict(), context)
+            result = await connector.execute_action(action_payload, context)
 
             # Update action log
             action_log.status = ExecutionStatus.SUCCESS if result.get("success") else ExecutionStatus.FAILED

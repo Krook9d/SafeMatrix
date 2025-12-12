@@ -45,6 +45,8 @@ class EmailAction(BaseModel):
     connector_id: int = Field(..., description="Email connector configuration ID")
     to: List[str] = Field(..., description="Recipient email addresses")
     cc: Optional[List[str]] = Field(default=None, description="CC email addresses")
+    team_ids: List[int] = Field(default_factory=list, description="Team IDs to pull recipients from")
+    cc_team_ids: List[int] = Field(default_factory=list, description="Team IDs to add as CC")
     subject: str = Field(..., description="Email subject template")
     body: str = Field(..., description="Email body template (supports variables)")
     

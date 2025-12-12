@@ -10,6 +10,7 @@ import {
   Select,
   MenuItem,
   Chip,
+  Autocomplete,
   IconButton,
   Dialog,
   DialogTitle,
@@ -44,7 +45,7 @@ import {
   NotificationImportant,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { workflowAPI, connectorAPI } from '../services/api';
+import { workflowAPI, connectorAPI, teamAPI } from '../services/api';
 import type { 
   WorkflowCreate, 
   Workflow, 
@@ -52,7 +53,8 @@ import type {
   WorkflowAction, 
   ConnectorConfig,
   RuleOperator,
-  ConnectorType 
+  ConnectorType,
+  Team
 } from '../services/api';
 
 const steps = ['Basic Information', 'Rules Configuration', 'Actions Setup', 'Review & Save'];
@@ -80,6 +82,32 @@ const ruleFields = [
   { value: 'published_date', label: 'Published Date', type: 'date' },
 ];
 
+const templateTokens = [
+  '{{cve_id}}',
+  '{{severity}}',
+  '{{cvss_score}}',
+  '{{description}}',
+  '{{affected_products}}',
+  '{{published_date}}',
+];
+
+const templateSampleValues: Record<string, string> = {
+  '{{cve_id}}': 'CVE-2025-1234',
+  '{{severity}}': 'CRITICAL',
+  '{{cvss_score}}': '9.8',
+  '{{description}}': 'Remote code execution due to unsafe deserialization',
+  '{{affected_products}}': 'ExampleApp 5.2; ExampleService 1.4',
+  '{{published_date}}': '2025-02-14',
+};
+
+const applyTemplateSample = (text: string) => {
+  let output = text || '';
+  Object.entries(templateSampleValues).forEach(([token, sample]) => {
+    output = output.replaceAll(token, sample);
+  });
+  return output;
+};
+
 const WorkflowForm: React.FC = () => {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
@@ -90,6 +118,7 @@ const WorkflowForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectors, setConnectors] = useState<ConnectorConfig[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
 
   // Form state
   const [formData, setFormData] = useState<WorkflowCreate>({
@@ -106,6 +135,7 @@ const WorkflowForm: React.FC = () => {
 
   useEffect(() => {
     fetchConnectors();
+    fetchTeams();
     if (isEdit) {
       fetchWorkflow();
     }
@@ -117,6 +147,15 @@ const WorkflowForm: React.FC = () => {
       setConnectors(data);
     } catch (err) {
       console.error('Error loading connectors:', err);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const data = await teamAPI.list();
+      setTeams(data);
+    } catch (err) {
+      console.error('Error loading teams:', err);
     }
   };
 
@@ -204,6 +243,9 @@ const WorkflowForm: React.FC = () => {
         return {
           connector_id: defaultConnectorId,
           to: [],
+          cc: [],
+          team_ids: [],
+          cc_team_ids: [],
           subject: 'Security Alert: {{cve_id}} - {{severity}} Vulnerability Detected',
           body: `A new {{severity}} vulnerability has been detected:
 
@@ -257,6 +299,19 @@ Affected Products: {{affected_products}}`,
     const newActions = [...formData.actions];
     newActions[index] = action;
     setFormData({ ...formData, actions: newActions });
+  };
+
+  const addTemplateToken = (index: number, field: 'subject' | 'body', token: string) => {
+    const targetAction = formData.actions[index];
+    const currentValue = (targetAction.config as any)[field] || '';
+    const updated = currentValue ? `${currentValue} ${token}` : token;
+    updateAction(index, {
+      ...targetAction,
+      config: {
+        ...targetAction.config,
+        [field]: updated
+      }
+    });
   };
 
   const removeAction = (index: number) => {
@@ -565,48 +620,237 @@ Affected Products: {{affected_products}}`,
           </FormControl>
         </Grid>
 
-        {action.type === 'email' && (
-          <>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="To (comma-separated emails)"
-                value={Array.isArray(action.config.to) ? action.config.to.join(', ') : ''}
-                onChange={(e) => updateAction(index, {
-                  ...action,
-                  config: { 
-                    ...action.config, 
-                    to: e.target.value.split(',').map(email => email.trim()).filter(Boolean)
+        {action.type === 'email' && (() => {
+          const emailConfig: any = {
+            to: Array.isArray((action.config as any).to) ? (action.config as any).to : [],
+            cc: Array.isArray((action.config as any).cc) ? (action.config as any).cc : [],
+            team_ids: (action.config as any).team_ids || [],
+            cc_team_ids: (action.config as any).cc_team_ids || [],
+            subject: (action.config as any).subject || '',
+            body: (action.config as any).body || '',
+          };
+
+          const handleRecipientChange = (field: 'to' | 'cc', value: string[]) => {
+            updateAction(index, {
+              ...action,
+              config: {
+                ...action.config,
+                [field]: value,
+              },
+            });
+          };
+
+          const handleTeamChange = (field: 'team_ids' | 'cc_team_ids', value: number[]) => {
+            updateAction(index, {
+              ...action,
+              config: {
+                ...action.config,
+                [field]: value,
+              },
+            });
+          };
+
+          return (
+            <>
+              <Grid item xs={12} md={6}>
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  options={[]}
+                  value={emailConfig.to}
+                  onChange={(_, value) => handleRecipientChange('to', value)}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option: string, idx: number) => (
+                      <Chip variant="outlined" label={option} {...getTagProps({ index: idx })} />
+                    ))
                   }
-                })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Subject"
-                value={action.config.subject || ''}
-                onChange={(e) => updateAction(index, {
-                  ...action,
-                  config: { ...action.config, subject: e.target.value }
-                })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Body"
-                multiline
-                rows={6}
-                value={action.config.body || ''}
-                onChange={(e) => updateAction(index, {
-                  ...action,
-                  config: { ...action.config, body: e.target.value }
-                })}
-              />
-            </Grid>
-          </>
-        )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Recipients (To)"
+                      placeholder="email@domain.com"
+                      helperText="Type an email then press Enter to add multiple recipients."
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  options={[]}
+                  value={emailConfig.cc}
+                  onChange={(_, value) => handleRecipientChange('cc', value)}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option: string, idx: number) => (
+                      <Chip variant="outlined" label={option} {...getTagProps({ index: idx })} color="default" />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Copy (CC)"
+                      placeholder="email@domain.com"
+                      helperText="Optional copy recipients."
+                    />
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Recipient teams</InputLabel>
+                  <Select
+                    multiple
+                    value={emailConfig.team_ids}
+                    label="Recipient teams"
+                    onChange={(e) => handleTeamChange('team_ids', (e.target.value as (number | string)[]).map(Number))}
+                    renderValue={(selected) =>
+                      teams
+                        .filter((t) => selected.includes(t.id))
+                        .map((t) => t.name)
+                        .join(', ') || 'Aucune'
+                    }
+                  >
+                    {teams.map((team) => (
+                      <MenuItem key={team.id} value={team.id}>
+                        {team.name} ({team.members.length} contacts)
+                      </MenuItem>
+                    ))}
+                    {teams.length === 0 && <MenuItem disabled>No team available</MenuItem>}
+                  </Select>
+                  <Typography variant="caption" color="text.secondary">
+                    Contacts of the selected teams are automatically merged into To.
+                  </Typography>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>CC teams</InputLabel>
+                  <Select
+                    multiple
+                    value={emailConfig.cc_team_ids}
+                    label="CC teams"
+                    onChange={(e) => handleTeamChange('cc_team_ids', (e.target.value as (number | string)[]).map(Number))}
+                    renderValue={(selected) =>
+                      teams
+                        .filter((t) => selected.includes(t.id))
+                        .map((t) => t.name)
+                        .join(', ') || 'Aucune'
+                    }
+                  >
+                    {teams.map((team) => (
+                      <MenuItem key={team.id} value={team.id}>
+                        {team.name} ({team.members.length} contacts)
+                      </MenuItem>
+                    ))}
+                    {teams.length === 0 && <MenuItem disabled>No team available</MenuItem>}
+                  </Select>
+                  <Typography variant="caption" color="text.secondary">
+                    Contacts of the selected teams are automatically merged into CC.
+                  </Typography>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                  <Typography variant="subtitle2">Email content</Typography>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      const defaults = getDefaultActionConfig('email');
+                      updateAction(index, {
+                        ...action,
+                        config: {
+                          ...action.config,
+                          subject: defaults.subject,
+                          body: defaults.body,
+                        },
+                      });
+                    }}
+                  >
+                    Reset template
+                  </Button>
+                </Box>
+                <TextField
+                  fullWidth
+                  label="Subject"
+                  value={emailConfig.subject}
+                  onChange={(e) =>
+                    updateAction(index, {
+                      ...action,
+                      config: { ...action.config, subject: e.target.value },
+                    })
+                  }
+                />
+                <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {templateTokens.map((token) => (
+                    <Chip
+                      key={token}
+                      label={token}
+                      onClick={() => addTemplateToken(index, 'subject', token)}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Body"
+                  multiline
+                  minRows={6}
+                  value={emailConfig.body}
+                  onChange={(e) =>
+                    updateAction(index, {
+                      ...action,
+                      config: { ...action.config, body: e.target.value },
+                    })
+                  }
+                  helperText="Use the tokens below to personalize the message."
+                />
+                <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {templateTokens.map((token) => (
+                    <Chip
+                      key={token}
+                      label={token}
+                      onClick={() => addTemplateToken(index, 'body', token)}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    backgroundColor: alpha(theme.palette.primary.light, 0.05),
+                    borderColor: alpha(theme.palette.primary.main, 0.2),
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom>
+                    Preview with sample data
+                  </Typography>
+                  <Divider sx={{ mb: 1 }} />
+                  <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
+                    {applyTemplateSample(emailConfig.subject) || 'Subject preview'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                    {applyTemplateSample(emailConfig.body) || 'Body preview'}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </>
+          );
+        })()}
 
         {action.type === 'thehive' && (
           <>

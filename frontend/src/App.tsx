@@ -27,6 +27,7 @@ import AuditLogs from './pages/AuditLogs';
 import Alerts from './pages/Alerts';
 import AlertDetail from './pages/AlertDetail';
 import DataEnrichment from './pages/DataEnrichment';
+import CustomDatabase from './pages/CustomDatabase';
 
 // Professional Material-UI theme
 const theme = createTheme({
@@ -253,6 +254,7 @@ const App: React.FC = () => {
               <Route path="alerts/:alertId" element={<AlertDetail />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="dsl-query" element={<DSLQuery />} />
+              <Route path="custom-database" element={<CustomDatabase />} />
               <Route path="workflows" element={<Workflows />} />
               <Route path="workflows/new" element={<WorkflowForm />} />
               <Route path="workflows/:id/edit" element={<WorkflowForm />} />

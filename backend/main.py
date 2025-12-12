@@ -9,6 +9,7 @@ from .core.opensearch_client import create_indexes
 from .models import user
 from .models import workflow
 from .models import audit_log
+from .models import custom_db  # register custom database models
 from .api.v1 import users as users_router
 from .api.v1 import login as login_router
 from .api.v1 import health as health_router
@@ -22,6 +23,7 @@ from .api.v1 import workflows as workflows_router
 from .api.v1 import connectors as connectors_router
 from .api.v1 import audit_logs as audit_logs_router
 from .api.v1 import alerts as alerts_router
+from .api.v1 import custom_db as custom_db_router
 from .api.v1 import nvd_sync as nvd_sync_router
 from .core.config import settings
 from .crud import user as crud_user
@@ -128,6 +130,7 @@ app.include_router(connectors_router.router, prefix="/api/v1/connectors", tags=[
 app.include_router(audit_logs_router.router, prefix="/api/v1", tags=["audit-logs"])
 app.include_router(alerts_router.router, prefix="/api/v1", tags=["alerts"])
 app.include_router(nvd_sync_router.router, prefix="/api/v1/nvd-sync", tags=["nvd-sync"])
+app.include_router(custom_db_router.router, prefix="/api/v1", tags=["custom-db"])
 
 @app.get("/")
 def read_root():

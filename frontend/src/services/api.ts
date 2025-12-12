@@ -236,6 +236,8 @@ export interface EmailAction {
   connector_id: number;
   to: string[];
   cc?: string[];
+  team_ids?: number[];
+  cc_team_ids?: number[];
   subject: string;
   body: string;
 }
@@ -269,6 +271,42 @@ export interface WorkflowAction {
   type: string;
   config: EmailAction | TheHiveAction | ServiceNowAction | JiraAction;
 }
+
+// Teams (Custom Database)
+export interface TeamMember {
+  id: number;
+  team_id: number;
+  email: string;
+  name?: string;
+  role?: string;
+  notes?: string;
+}
+
+export interface TeamCreateMemberInput {
+  email: string;
+  name?: string;
+  role?: string;
+  notes?: string;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  notes?: string;
+  extra_data?: Record<string, string>;
+  members: TeamMember[];
+}
+
+export interface TeamCreate {
+  name: string;
+  description?: string;
+  notes?: string;
+  extra_data?: Record<string, string>;
+  members?: TeamCreateMemberInput[];
+}
+
+export interface TeamUpdate extends Partial<TeamCreate> {}
 
 export interface Workflow {
   id: number;
@@ -620,6 +658,29 @@ export const connectorAPI = {
   getTypes: async (): Promise<{ supported_types: ConnectorType[] }> => {
     const response = await apiClient.get('/api/v1/connectors/types/');
     return response.data;
+  },
+};
+
+// Teams / Custom Database
+export const teamAPI = {
+  list: async (): Promise<Team[]> => {
+    const response = await apiClient.get('/api/v1/teams/');
+    return response.data;
+  },
+  getById: async (teamId: number): Promise<Team> => {
+    const response = await apiClient.get(`/api/v1/teams/${teamId}`);
+    return response.data;
+  },
+  create: async (payload: TeamCreate): Promise<Team> => {
+    const response = await apiClient.post('/api/v1/teams/', payload);
+    return response.data;
+  },
+  update: async (teamId: number, payload: TeamUpdate): Promise<Team> => {
+    const response = await apiClient.put(`/api/v1/teams/${teamId}`, payload);
+    return response.data;
+  },
+  delete: async (teamId: number): Promise<void> => {
+    await apiClient.delete(`/api/v1/teams/${teamId}`);
   },
 };
 
