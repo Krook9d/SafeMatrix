@@ -314,6 +314,15 @@ All endpoints are restricted to admins:
 <img src="/frontend/public/screenshot/vulnerabilities1.png" width="800" alt="vulnerabilities1">
 <img src="/frontend/public/screenshot/vulnerabilities2.png" width="800" alt="vulnerabilities2">
 
+### Workflow
+<img src="/frontend/public/screenshot/workflow1.png" width="800" alt="workflow1">
+<img src="/frontend/public/screenshot/workflow2.png" width="800" alt="workflow2">
+<img src="/frontend/public/screenshot/workflow3.png" width="800" alt="workflow3">
+
+### Directory
+<img src="/frontend/public/screenshot/directory.png" width="800" alt="directory">
+
+
 ### Connectors
 <img src="/frontend/public/screenshot/connectors.png" width="800" alt="Architecture">
 
